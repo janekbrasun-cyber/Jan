@@ -23,3 +23,7 @@ Otwórz http://localhost:3000.
 
 - `server.js` — serwer Express; `POST /api/flashcards` (`{ topic, count, level }`) wywołuje Claude API i zwraca `{ title, cards: [{ question, answer }] }`
 - `public/` — interfejs (czysty HTML/CSS/JS, bez kroku budowania)
+
+## Wersja na telefon (bez serwera)
+
+`artifact/fiszki.html` to jednoplikowa wersja publikowana jako Artifact na claude.ai. Nie potrzebuje serwera ani klucza API — fiszki generuje Claude na koncie osoby, która otworzyła stronę.
