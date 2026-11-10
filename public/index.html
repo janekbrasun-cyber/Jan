@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fiszki</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <a href="#" class="brand" id="home-link">Fiszki</a>
+  </header>
+
+  <main>
+    <!-- Widok startowy: formularz + zapisane talie -->
+    <section id="view-home">
+      <h1>Czego chcesz się nauczyć?</h1>
+      <form id="gen-form" class="panel">
+        <label for="topic">Temat</label>
+        <input id="topic" name="topic" type="text" maxlength="300" required
+               placeholder="np. fotosynteza, II wojna światowa, angielskie czasowniki nieregularne" autocomplete="off">
+        <div class="row">
+          <div>
+            <label for="count">Liczba fiszek</label>
+            <input id="count" name="count" type="number" min="3" max="30" value="10" required>
+          </div>
+          <div>
+            <label for="level">Poziom</label>
+            <select id="level" name="level">
+              <option value="podstawowy">Podstawowy</option>
+              <option value="sredni" selected>Średni</option>
+              <option value="zaawansowany">Zaawansowany</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="primary" id="gen-btn">Generuj fiszki</button>
+        <p id="gen-status" class="status" role="status" aria-live="polite"></p>
+      </form>
+
+      <section id="decks-section" hidden>
+        <h2>Twoje talie</h2>
+        <ul id="deck-list" class="deck-list"></ul>
+      </section>
+    </section>
+
+    <!-- Widok talii: lista fiszek -->
+    <section id="view-deck" hidden>
+      <button class="link" data-nav="home">← Wszystkie talie</button>
+      <h1 id="deck-title"></h1>
+      <p id="deck-meta" class="muted"></p>
+      <div class="actions">
+        <button class="primary" id="study-btn">Ucz się</button>
+        <button id="export-btn">Eksport CSV</button>
+        <button class="danger" id="delete-btn">Usuń talię</button>
+      </div>
+      <p class="muted hint">Kliknij fiszkę, aby ją odwrócić.</p>
+      <div id="card-grid" class="grid"></div>
+    </section>
+
+    <!-- Widok nauki: jedna fiszka naraz -->
+    <section id="view-study" hidden>
+      <button class="link" data-nav="deck">← Zakończ naukę</button>
+      <div class="progress"><div id="progress-bar"></div></div>
+      <p id="study-count" class="muted center"></p>
+
+      <div id="study-area">
+        <button id="study-card" class="card big" aria-label="Odwróć fiszkę">
+          <span class="card-inner">
+            <span class="face front"><small>Pytanie</small><span id="study-q"></span></span>
+            <span class="face back"><small>Odpowiedź</small><span id="study-a"></span></span>
+          </span>
+        </button>
+        <div class="actions center">
+          <button id="show-btn" class="primary">Pokaż odpowiedź</button>
+          <button id="again-btn" class="danger" hidden>Jeszcze nie umiem</button>
+          <button id="know-btn" class="success" hidden>Umiem</button>
+        </div>
+        <p class="muted center hint">Spacja — odwróć · 1 — jeszcze nie · 2 — umiem</p>
+      </div>
+
+      <div id="study-done" class="panel center" hidden>
+        <h2>Gotowe! 🎉</h2>
+        <p id="done-text"></p>
+        <div class="actions center">
+          <button class="primary" id="restart-btn">Jeszcze raz</button>
+          <button data-nav="deck">Wróć do talii</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

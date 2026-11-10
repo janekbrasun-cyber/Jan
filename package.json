@@ -1,0 +1,17 @@
+{
+  "name": "fiszki",
+  "version": "1.0.0",
+  "description": "Generator fiszek — wpisz temat, a aplikacja wygeneruje fiszki do nauki",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "dev": "node --env-file-if-exists=.env --watch server.js"
+  },
+  "engines": { "node": ">=20.12" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.7.0",
+    "express": "^5.3.0",
+    "zod": "^4.6.7"
+  }
+}
