@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zielony Wrocław — od zera do imperium</title>
+<style>
+:root{
+  --bg:#070b09; --bg2:#0d1512; --panel:#101b16; --panel2:#15241d; --line:#1f3a2c;
+  --neon:#39ff14; --neon-dim:#1f9a10; --text:#d9f7df; --muted:#7fa58b;
+  --red:#ff4d5e; --yellow:#ffd166; --blue:#3ec5ff; --pink:#ff5fd2;
+  --radius:14px; --glow:0 0 12px rgba(57,255,20,.45);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  background:radial-gradient(1200px 600px at 50% -10%,#12301f 0%,var(--bg) 60%) fixed,var(--bg);
+  color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  overflow-x:hidden;
+}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:disabled{cursor:not-allowed;opacity:.45}
+h1,h2,h3{margin:0 0 .4em;line-height:1.15}
+h2{font-size:1.15rem;color:var(--neon);text-shadow:var(--glow);letter-spacing:.02em}
+h3{font-size:1rem}
+p{margin:.3em 0 .7em}
+small,.muted{color:var(--muted)}
+.good{color:var(--neon)} .bad{color:var(--red)} .warn{color:var(--yellow)}
+#app{max-width:1060px;margin:0 auto;padding:0 12px 96px;display:none}
+#app.on{display:block}
+
+/* ---------- pasek górny ---------- */
+#topbar{position:sticky;top:0;z-index:30;background:rgba(7,11,9,.92);backdrop-filter:blur(8px);
+  margin:0 -12px;padding:8px 12px 0;border-bottom:1px solid var(--line)}
+.stats{display:grid;grid-template-columns:repeat(5,1fr) auto;gap:6px;align-items:stretch}
+.stat{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:5px 8px;min-width:0;outline:none;transition:border-color .2s,box-shadow .2s}
+.stat:hover,.stat:focus{border-color:var(--neon-dim);box-shadow:var(--glow)}
+.stat .lbl{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat .val{font-weight:700;font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.stat .val.flash{animation:flash .5s}
+@keyframes flash{0%{color:#fff;text-shadow:0 0 14px #fff;transform:scale(1.08)}100%{transform:none}}
+.menu-btn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:0 12px;font-size:1.2rem}
+.menu-btn:hover{border-color:var(--neon)}
+.heatbar{height:6px;border-radius:4px;background:#1a2a22;overflow:hidden;margin-top:3px}
+.heatbar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--neon),var(--yellow) 55%,var(--red));
+  background-size:200px 100%;transition:width .5s}
+.heat-hot .val{color:var(--red);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.55}}
+.goal{height:4px;margin:8px -12px 0;background:#0e1a14}
+.goal i{display:block;height:100%;background:var(--neon);box-shadow:var(--glow);transition:width .6s}
+[data-tip]::after{content:attr(data-tip);position:absolute;left:0;top:calc(100% + 8px);z-index:50;width:max-content;max-width:min(260px,80vw);
+  background:#04140b;border:1px solid var(--neon-dim);color:var(--text);font-size:.8rem;font-weight:400;line-height:1.35;text-transform:none;letter-spacing:0;
+  padding:8px 10px;border-radius:10px;box-shadow:0 8px 24px #000a;opacity:0;pointer-events:none;transform:translateY(-4px);transition:.18s;white-space:normal}
+[data-tip].tr::after{left:auto;right:0}
+[data-tip]:hover::after,[data-tip]:focus::after{opacity:1;transform:none}
+
+/* ---------- nawigacja ---------- */
+#nav{display:flex;gap:6px;margin:10px 0;align-items:center;flex-wrap:wrap}
+.tab{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 6px;font-weight:600;
+  transition:.2s;white-space:nowrap;min-width:0}
+.tab kbd{display:none}
+.tab:hover{border-color:var(--neon-dim)}
+.tab.on{background:#123a1c;border-color:var(--neon);color:var(--neon);box-shadow:var(--glow)}
+.tab .badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--neon);color:#031;font-size:.72rem;margin-left:3px}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:600;transition:.15s}
+.btn:hover:not(:disabled){border-color:var(--neon);box-shadow:var(--glow)}
+.btn:active:not(:disabled){transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#2ad410,#178a0a);border-color:var(--neon);color:#021;text-shadow:none}
+.btn.danger{background:#3a1218;border-color:var(--red);color:#ffd9dd}
+.btn.small{padding:5px 9px;font-size:.85rem}
+.btn.night{background:linear-gradient(180deg,#27306b,#161b45);border-color:#6f7cff;color:#e3e6ff}
+.btn.block{display:block;width:100%}
+kbd{font:600 .7rem ui-monospace,monospace;border:1px solid var(--line);border-radius:4px;padding:0 4px;color:var(--muted);margin-left:4px}
+
+/* ---------- widoki ---------- */
+#view{animation:fadeUp .28s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;align-items:start}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* mapa */
+.map{position:relative;height:440px;border-radius:var(--radius);border:1px solid var(--line);overflow:hidden;
+  background:
+   repeating-linear-gradient(0deg,transparent 0 38px,rgba(57,255,20,.05) 38px 39px),
+   repeating-linear-gradient(90deg,transparent 0 38px,rgba(57,255,20,.05) 38px 39px),
+   radial-gradient(circle at 46% 50%,#143422 0,#0a130f 70%)}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.river{fill:none;stroke:#1d6fa8;stroke-width:16;stroke-linecap:round;opacity:.55;filter:drop-shadow(0 0 8px #3ec5ff)}
+.river2{fill:none;stroke:#7fd8ff;stroke-width:2;stroke-dasharray:6 14;opacity:.6;animation:flow 6s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-200}}
+.maplabel{position:absolute;font-size:.7rem;color:#4aa3d6;letter-spacing:.3em;transform:rotate(-14deg);left:57%;top:33%;opacity:.8}
+.node{position:absolute;transform:translate(-50%,-50%);width:112px;padding:6px 6px 7px;border-radius:14px;text-align:center;
+  background:rgba(13,26,20,.92);border:1px solid var(--line);transition:.2s;line-height:1.25}
+.node:hover,.node:focus-visible{border-color:var(--neon);box-shadow:var(--glow);outline:none;z-index:3}
+.node.sel{border-color:var(--yellow);box-shadow:0 0 14px rgba(255,209,102,.5);z-index:2}
+.node.here{border-color:var(--neon);background:#123a1c;box-shadow:var(--glow)}
+.node .em{font-size:1.5rem;line-height:1}
+.node .nm{font-weight:700;font-size:.8rem}
+.node .meta{font-size:.68rem;color:var(--muted)}
+.node .you{position:absolute;top:-14px;right:-6px;font-size:1.4rem;animation:bob 1.2s ease-in-out infinite;filter:drop-shadow(0 0 6px var(--neon))}
+@keyframes bob{50%{transform:translateY(-5px)}}
+.pricegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:8px 0}
+.pricegrid div{background:var(--panel2);border-radius:8px;padding:5px 8px;font-size:.85rem;display:flex;justify-content:space-between;gap:6px}
+.dots{letter-spacing:1px}
+.show-m{display:none}
+.bar{height:6px;background:#1a2a22;border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--neon);border-radius:4px;transition:width .4s}
+.bar.rep i{background:var(--pink)}
+
+/* rynek */
+table.mkt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.mkt th{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;text-align:right;padding:4px 6px;font-weight:600}
+.mkt th:first-child,.mkt td:first-child{text-align:left}
+.mkt td{padding:8px 6px;text-align:right;border-top:1px solid var(--line);white-space:nowrap}
+.mkt tr.srow{cursor:pointer;transition:background .15s}
+.mkt tr.srow:hover{background:var(--panel2)}
+.mkt tr.srow.on{background:#123a1c;box-shadow:inset 3px 0 0 var(--neon)}
+.mkt .nm{font-weight:700}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.seg button{padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:700}
+.seg button.on.buy{background:#123a1c;border-color:var(--neon);color:var(--neon)}
+.seg button.on.sell{background:#3a2a10;border-color:var(--yellow);color:var(--yellow)}
+.qty{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center}
+.qty2{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:8px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:linear-gradient(90deg,var(--neon-dim),#1a2a22)}
+input[type=range]::-moz-range-track{height:8px;border-radius:5px;background:linear-gradient(90deg,var(--neon-dim),#1a2a22)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--neon);border:3px solid #052;margin-top:-9px;box-shadow:var(--glow)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--neon);border:3px solid #052;box-shadow:var(--glow)}
+input[type=number],input[type=text]{width:100%;background:#07110c;border:1px solid var(--line);border-radius:10px;color:var(--text);padding:8px 10px;font:inherit}
+input:focus-visible,button:focus-visible{outline:2px solid var(--neon);outline-offset:2px}
+.sum{background:var(--panel2);border-radius:10px;padding:8px 10px;margin:10px 0;font-size:.9rem;min-height:74px}
+.sum b{font-size:1.1rem}
+.client{border-color:var(--pink);box-shadow:0 0 12px rgba(255,95,210,.25)}
+canvas{display:block;width:100%;height:190px}
+
+/* hodowla */
+.pots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.pot{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;min-height:132px;display:flex;flex-direction:column;gap:6px;justify-content:center}
+.pot .big{font-size:2rem;line-height:1}
+.pot.ready{border-color:var(--neon);box-shadow:var(--glow)}
+.pot.ready .big{animation:bob 1s infinite}
+.pot.grow .big{animation:sway 3s ease-in-out infinite}
+@keyframes sway{50%{transform:rotate(6deg)}}
+.seeds{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.seed{text-align:left;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);transition:.15s}
+.seed.on{border-color:var(--neon);background:#123a1c}
+.seed:hover{border-color:var(--neon-dim)}
+
+/* ulepszenia */
+.ups{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.up{display:flex;flex-direction:column;gap:6px;margin:0}
+.up .ic{font-size:1.7rem}
+.up .lvls{display:flex;gap:4px}
+.up .lvls i{flex:1;height:5px;border-radius:3px;background:#1a2a22}
+.up .lvls i.on{background:var(--neon);box-shadow:var(--glow)}
+
+/* dziennik */
+.logday{color:var(--neon);font-weight:700;margin:12px 0 4px;font-size:.85rem;letter-spacing:.05em}
+.logrow{display:flex;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:.92rem}
+.logrow .i{flex:none;width:1.6em;text-align:center}
+
+/* modale */
+#modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:14px;
+  background:rgba(2,6,4,.82);backdrop-filter:blur(4px)}
+#modal.on{display:flex}
+.dialog{width:min(560px,100%);max-height:92vh;overflow:auto;background:linear-gradient(180deg,#12231a,#0b1510);
+  border:1px solid var(--neon-dim);border-radius:18px;padding:18px;box-shadow:0 0 40px rgba(57,255,20,.18),0 20px 60px #000;animation:pop .25s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+.dialog h1{font-size:1.7rem;color:var(--neon);text-shadow:0 0 18px rgba(57,255,20,.7)}
+.logo{font-size:3rem;text-align:center;animation:bob 2s infinite}
+.title{text-align:center;font-weight:900;font-size:2rem;letter-spacing:.04em;color:var(--neon);text-shadow:0 0 22px rgba(57,255,20,.8);margin:0}
+.subtitle{text-align:center;color:var(--muted);margin-bottom:14px}
+.choices{display:grid;gap:8px;margin-top:10px}
+.choice{text-align:left;padding:10px 12px}
+.choice small{display:block;font-weight:400}
+.evbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px}
+.evbox .evt{font-weight:800;font-size:1.05rem}
+.lines{display:grid;gap:4px;margin:8px 0}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0}
+.statgrid div{background:var(--panel2);border-radius:8px;padding:6px 9px;font-size:.88rem}
+.statgrid b{display:block;font-size:1rem}
+table.rank{width:100%;border-collapse:collapse;font-size:.88rem}
+.rank td,.rank th{padding:4px 6px;text-align:left;border-bottom:1px solid var(--line)}
+.rank td:last-child,.rank th:last-child{text-align:right}
+.rank tr.me{color:var(--neon);font-weight:700}
+#toasts{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:120;display:grid;gap:6px;width:min(420px,92vw);pointer-events:none}
+.toast{background:#04140b;border:1px solid var(--neon-dim);border-radius:12px;padding:9px 12px;box-shadow:0 8px 24px #000a;animation:toast 3.2s forwards;font-size:.92rem}
+.toast.bad{border-color:var(--red)} .toast.warn{border-color:var(--yellow)}
+@keyframes toast{0%{opacity:0;transform:translateY(12px)}8%,85%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-8px)}}
+
+/* ---------- telefon ---------- */
+@media (max-width:760px){
+  body{font-size:14px}
+  .stats{grid-template-columns:repeat(12,1fr);gap:5px;position:relative}
+  .stat{grid-column:span 4;position:static}
+  .stat.heat{grid-column:span 6}
+  .menu-btn{grid-column:span 2;padding:0}
+  [data-tip]::after,[data-tip].tr::after{left:0;right:0;width:auto;max-width:none}
+  .grid2{grid-template-columns:1fr}
+  #nav{position:fixed;left:0;right:0;bottom:0;z-index:40;margin:0;padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+    background:rgba(7,11,9,.96);border-top:1px solid var(--line);gap:4px;flex-wrap:nowrap}
+  .tab{padding:6px 1px;font-size:.62rem;display:flex;flex-direction:column;align-items:center;gap:1px;border-radius:10px;overflow:hidden;position:relative}
+  .tab span{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+  .show-m{display:inline!important}
+  .btn.night kbd{display:none}
+  .tab .ti{font-size:1.15rem}
+  .tab .badge{position:absolute;top:2px;right:2px;margin:0}
+  .btn.night{font-size:.72rem;padding:6px 8px;flex:none}
+  .map{height:430px}
+  .node{width:98px;padding:5px 3px 6px}
+  .mkt td,.mkt th{padding:7px 3px;font-size:.84rem}
+  .hide-m{display:none}
+  #toasts{bottom:78px}
+}
+@media (min-width:761px){.tab kbd{display:inline}.tab .ti{margin-right:4px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="topbar"></header>
+  <nav id="nav" aria-label="Widoki gry"></nav>
+  <main id="view"></main>
+</div>
+<div id="modal" role="dialog" aria-modal="true"></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   1. CONFIG — wszystkie stałe balansu w jednym miejscu
+   ===================================================================== */
+const CONFIG = {
+  saveKey: 'zielonyWroclaw.save.v1',
+  scoreKey: 'zielonyWroclaw.scores.v1',
+  startCash: 500,
+  goal: 1000000,
+  maxDays: 60,
+  hoursPerDay: 12,
+  startDistrict: 'psie',
+  market: {
+    spread: 0.86,          // cena skupu = cena kupna × spread
+    floodK: 0.5,           // siła reakcji ceny na wolumen gracza
+    floodDecay: 0.4,       // ile „zalania rynku" zostaje na następny dzień
+    depthScale: 2.4,       // globalny mnożnik głębokości rynku
+    trendPersist: 0.7,     // bezwładność trendu (AR1)
+    trendClamp: 0.65,
+    minMult: 0.35, maxMult: 3.2,
+    prehistoryDays: 8
+  },
+  heat: {
+    max: 100,
+    decay: 8,              // dzienny spadek uwagi
+    saleK: 0.45,            // uwaga = ryzyko × saleK × (obrót/1000)^pow
+    pow: 0.6,
+    buyFactor: 0.35,       // zakupy liczą się słabiej niż sprzedaż
+    clientFactor: 0.5,
+    workerDaily: 0.5,      // uwaga za poziom pracowników na dzień
+    raidFrom: 50,
+    raidBase: 0.08,
+    raidSlope: 0.5,
+    raidGoodsLoss: 0.5,
+    raidFine: 0.2,
+    raidPlantLoss: 0.5,
+    raidCooldown: 30,
+    warnAt: 88
+  },
+  bribe: { base: 1000, growth: 1.15, heat: 15, minHeat: 5 },
+  loan: { rate: 0.06, baseLimit: 3000, worthFactor: 0.5, maxLimit: 150000, bankruptFactor: 2, step: 100 },
+  rep: { max: 100, perDepth: 3, capPerSale: 3, priceBonus: 0.0012, depthBonus: 0.015, clientAt: 40, vipAt: 75, clientPremium: 1.35, clientQty: 0.45, vipQty: 0.9 },
+  events: { chance: 0.9 },
+  score: { winBase: 1000000, perDayLeft: 25000 }
+};
+
+/* =====================================================================
+   2. DANE — odmiany, dzielnice, ulepszenia
+   ===================================================================== */
+const STRAINS = [
+  { id:'lemon',   name:'Lemon Haze',   emoji:'🍋', color:'#e8ff3a', base:22, vol:0.10, depth:200, seed:150, days:3, yield:40 },
+  { id:'afghan',  name:'Afghan Kush',  emoji:'⛰️', color:'#c58b4a', base:28, vol:0.11, depth:160, seed:220, days:4, yield:45 },
+  { id:'blue',    name:'Blue Monkey',  emoji:'🐒', color:'#3ec5ff', base:35, vol:0.16, depth:130, seed:320, days:4, yield:50 },
+  { id:'pink',    name:'Pink Kush',    emoji:'🌸', color:'#ff5fd2', base:44, vol:0.15, depth:110, seed:420, days:5, yield:50 },
+  { id:'og',      name:'OG Kush',      emoji:'🔥', color:'#ff8a3a', base:55, vol:0.20, depth:90,  seed:550, days:5, yield:55 },
+  { id:'khalifa', name:'Khalifa Kush', emoji:'👑', color:'#ffd166', base:75, vol:0.26, depth:70,  seed:800, days:6, yield:60 }
+];
+const DISTRICTS = [
+  { id:'stare', name:'Stare Miasto', emoji:'🏰', mult:1.40, risk:1.8, demand:1.1, x:47, y:50,
+    desc:'Rynek, turyści i krasnale. Płacą jak za zboże, ale straż miejska ma tu oczy dookoła głowy.',
+    aff:{lemon:.95,afghan:.95,blue:1,pink:1.05,og:1.1,khalifa:1.15},
+    client:{name:'Mecenas Wiktor',emoji:'⚖️',line:'„Na stres przed rozprawą. Faktury nie trzeba."'} },
+  { id:'krzyki', name:'Krzyki', emoji:'🏡', mult:1.25, risk:1.5, demand:0.9, x:50, y:83,
+    desc:'Wille, SUV-y i monitoring. Klientela z portfelem, sąsiedzi z lornetką.',
+    aff:{lemon:.9,afghan:1,blue:1,pink:1.15,og:1.05,khalifa:1.1},
+    client:{name:'Prezes Grażyna',emoji:'💼',line:'„Dla zarządu, na integrację. Dyskretnie."'} },
+  { id:'nadodrze', name:'Nadodrze', emoji:'🎨', mult:1.05, risk:1.0, demand:1.0, x:40, y:20,
+    desc:'Murale, rzemieślnicze kawiarnie i hipsterzy. Wszyscy tu „coś tworzą".',
+    aff:{lemon:1.1,afghan:1,blue:1.2,pink:1.05,og:1,khalifa:.9},
+    client:{name:'DJ Kacper',emoji:'🎧',line:'„Mam seta do rana, potrzebuję weny."'} },
+  { id:'biskupin', name:'Biskupin', emoji:'🎓', mult:0.95, risk:0.9, demand:1.3, x:83, y:52,
+    desc:'Akademiki i wieczna sesja. Popyt ogromny, budżety studenckie.',
+    aff:{lemon:1.2,afghan:1.1,blue:1.05,pink:1,og:.95,khalifa:.85},
+    client:{name:'Wieczny Student Mati',emoji:'📚',line:'„Zrzuta z całego piętra, stypendium przyszło."'} },
+  { id:'fabryczna', name:'Fabryczna', emoji:'🏭', mult:0.82, risk:0.6, demand:1.0, x:15, y:58,
+    desc:'Hale, magazyny i hurtownicy. Tanio, sporo i nikt o nic nie pyta.',
+    aff:{lemon:1,afghan:1.1,blue:.95,pink:.9,og:1.05,khalifa:.9},
+    client:{name:'Majster Heniek',emoji:'🔧',line:'„Na nocną zmianę, chłopaki się zrzucili."'} },
+  { id:'psie', name:'Psie Pole', emoji:'🐕', mult:0.75, risk:0.5, demand:0.8, x:80, y:13,
+    desc:'Działki, garaże i cisza. Najtaniej w mieście, policja wpada tu tylko na grilla.',
+    aff:{lemon:.95,afghan:1.05,blue:1,pink:1,og:1,khalifa:1},
+    client:{name:'Babcia Jadzia',emoji:'👵',line:'„Na jaskrę, kochanieńki. I dla koleżanek z różańca."'} }
+];
+const UPGRADES = {
+  stash: { name:'Schowek', icon:'🎒', desc:'Ile gramów towaru zmieścisz naraz.', levels:[
+    { name:'Plecak szkolny', cap:100, cost:0, info:'100 g' },
+    { name:'Torba kuriera', cap:250, cost:1200, info:'250 g' },
+    { name:'Bagażnik z podwójnym dnem', cap:600, cost:5000, info:'600 g' },
+    { name:'Piwnica u cioci', cap:1500, cost:18000, info:'1 500 g' },
+    { name:'Garaż na Psim Polu', cap:3500, cost:55000, info:'3 500 g' },
+    { name:'Magazyn „Kwiaty-Hurt"', cap:8000, cost:140000, info:'8 000 g' } ] },
+  transport: { name:'Transport', icon:'🚲', desc:'Im szybciej, tym więcej dzielnic odwiedzisz w ciągu dnia.', levels:[
+    { name:'Rower', emoji:'🚲', hours:4, escape:0.4, cost:0, info:'przejazd 4 h' },
+    { name:'Skuter', emoji:'🛵', hours:3, escape:0.55, cost:3500, info:'przejazd 3 h' },
+    { name:'Van „Kwiaciarnia"', emoji:'🚐', hours:2, escape:0.7, cost:28000, info:'przejazd 2 h' } ] },
+  lawyer: { name:'Prawnik', icon:'⚖️', desc:'Zmniejsza grzywny i straty przy nalotach.', levels:[
+    { name:'Brak', fine:1, goods:1, cost:0, info:'radzisz sobie sam' },
+    { name:'Mecenas z ogłoszenia', fine:0.6, goods:1, cost:7000, info:'grzywny −40%' },
+    { name:'Kancelaria Papuga i Wspólnicy', fine:0.3, goods:0.6, cost:40000, info:'grzywny −70%, straty towaru −40%' } ] },
+  informant: { name:'Informator', icon:'🕵️', desc:'Podgląd jutrzejszych cen.', levels:[
+    { name:'Brak', cost:0, info:'wróżysz z fusów' },
+    { name:'Szwagier z komendy', cost:5000, info:'prognoza cen w dzielnicy, w której jesteś' },
+    { name:'Siatka uszu', cost:25000, info:'prognoza w całym mieście + ryzyko nalotu' } ] },
+  workers: { name:'Pracownicy', icon:'🧑‍🤝‍🧑', desc:'Pasywny dochód co noc. Każdy poziom lekko podnosi uwagę policji.', levels:[
+    { name:'Brak', income:0, cost:0, info:'jednoosobowa działalność' },
+    { name:'Dzieciak z osiedla', income:300, cost:2500, info:'+300 zł/dzień' },
+    { name:'Kurier na hulajnodze', income:900, cost:8000, info:'+900 zł/dzień' },
+    { name:'Barman z Nadodrza', income:2600, cost:25000, info:'+2 600 zł/dzień' },
+    { name:'Ekipa z Fabrycznej', income:7000, cost:70000, info:'+7 000 zł/dzień' },
+    { name:'Menedżer regionu', income:17000, cost:180000, info:'+17 000 zł/dzień' } ] },
+  pots: { name:'Doniczki', icon:'🪴', desc:'Liczba roślin, które hodujesz jednocześnie.', levels:[
+    { name:'Parapet', pots:2, cost:0, info:'2 doniczki' },
+    { name:'Szafa po babci', pots:4, cost:2000, info:'4 doniczki' },
+    { name:'Growbox', pots:8, cost:10000, info:'8 doniczek' },
+    { name:'Strych', pots:16, cost:45000, info:'16 doniczek' },
+    { name:'Hala po pieczarkarni', pots:32, cost:140000, info:'32 doniczki' } ] },
+  lamps: { name:'Oświetlenie', icon:'💡', desc:'Większy plon z każdej rośliny.', levels:[
+    { name:'Żarówka z Castoramy', mult:1, cost:0, info:'plon ×1' },
+    { name:'Lampy LED', mult:1.4, cost:6000, info:'plon ×1,4' },
+    { name:'Sodówki + nawadnianie', mult:1.9, cost:35000, info:'plon ×1,9' } ] }
+};
+const STR = {}; STRAINS.forEach(s => STR[s.id] = s);
+const DIS = {}; DISTRICTS.forEach(d => DIS[d.id] = d);
+
+/* =====================================================================
+   3. NARZĘDZIA
+   ===================================================================== */
+const rnd = (a, b) => a + Math.random() * (b - a);
+const rint = (a, b) => Math.floor(rnd(a, b + 1));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+const num = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const zl = n => num(n) + ' zł';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const ok = (msg, extra) => Object.assign({ ok: true, msg: msg || '' }, extra || {});
+const fail = msg => ({ ok: false, msg });
+
+/* =====================================================================
+   4. STAN GRY + ZAPIS
+   ===================================================================== */
+let S = null;
+
+const Store = {
+  save() { if (!S || S.over) return; try { localStorage.setItem(CONFIG.saveKey, JSON.stringify(S)); } catch (e) { /* brak miejsca lub tryb prywatny */ } },
+  load() {
+    try {
+      const raw = localStorage.getItem(CONFIG.saveKey);
+      if (!raw) return null;
+      const st = JSON.parse(raw);
+      if (!st || st.v !== 1 || !st.market || !st.inv || st.over) return null;
+      return st;
+    } catch (e) { return null; }
+  },
+  has() { return !!Store.load(); },
+  clear() { try { localStorage.removeItem(CONFIG.saveKey); } catch (e) { /* nic */ } },
+  scores() { try { const a = JSON.parse(localStorage.getItem(CONFIG.scoreKey) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } },
+  addScore(entry) {
+    const list = Store.scores(); list.push(entry);
+    list.sort((a, b) => b.score - a.score);
+    const top = list.slice(0, 10);
+    try { localStorage.setItem(CONFIG.scoreKey, JSON.stringify(top)); } catch (e) { /* nic */ }
+    return top;
+  }
+};
+
+function newState(name) {
+  const st = {
+    v: 1, id: Date.now() + '-' + rint(1000, 9999),
+    name: (name || 'Ziomek').slice(0, 16),
+    day: 1, hours: CONFIG.hoursPerDay, cash: CONFIG.startCash, debt: 0, heat: 0,
+    loc: CONFIG.startDistrict,
+    inv: {}, avgCost: {},
+    up: { stash: 0, transport: 0, lawyer: 0, informant: 0, workers: 0, pots: 0, lamps: 0 },
+    bribes: 0, plants: [], rep: {}, traded: {}, clients: {},
+    market: null, hist: {},
+    log: [], report: null, pending: null, over: null,
+    nextHoursMod: 0, lastEvent: null, tutorial: 0,
+    stats: { soldG: 0, revenue: 0, boughtG: 0, spent: 0, fines: 0, raids: 0, lostG: 0, events: 0, bestDeal: 0,
+             harvestedG: 0, trips: 0, interest: 0, passive: 0, peakWorth: CONFIG.startCash, upgrades: 0 }
+  };
+  STRAINS.forEach(s => { st.inv[s.id] = 0; st.avgCost[s.id] = 0; });
+  DISTRICTS.forEach(d => { st.rep[d.id] = 0; });
+  for (let i = 0; i < UPGRADES.pots.levels[0].pots; i++) st.plants.push(null);
+  return st;
+}
+
+/* =====================================================================
+   5. LOGIKA RYNKU
+   ===================================================================== */
+const Market = {
+  init() {
+    const m = { x: {}, xNext: {}, flood: {}, shocks: [] };
+    DISTRICTS.forEach(d => {
+      m.x[d.id] = {}; m.xNext[d.id] = {}; m.flood[d.id] = {};
+      STRAINS.forEach(s => { m.x[d.id][s.id] = gauss() * s.vol; m.xNext[d.id][s.id] = Market.step(m.x[d.id][s.id], s); m.flood[d.id][s.id] = 0; });
+    });
+    S.market = m;
+    STRAINS.forEach(s => { S.hist[s.id] = {}; DISTRICTS.forEach(d => { S.hist[s.id][d.id] = []; }); });
+    for (let i = 0; i < CONFIG.market.prehistoryDays; i++) { Market.record(); Market.advance(); }
+    Market.record();
+  },
+  step(x, s) { return clamp(CONFIG.market.trendPersist * x + gauss() * s.vol, -CONFIG.market.trendClamp, CONFIG.market.trendClamp); },
+  shock(d, s, lastingOnly) {
+    let m = 1;
+    for (const sh of S.market.shocks) {
+      if ((sh.d === null || sh.d === d) && (sh.s === null || sh.s === s) && (!lastingOnly || sh.days > 1)) m *= sh.mult;
+    }
+    return m;
+  },
+  addShock(d, s, mult, days) { S.market.shocks.push({ d: d, s: s, mult: mult, days: days }); },
+  raw(d, s, x, shock) {
+    const st = STR[s], di = DIS[d];
+    return clamp(st.base * di.mult * di.aff[s] * Math.exp(x) * shock, st.base * CONFIG.market.minMult, st.base * CONFIG.market.maxMult);
+  },
+  /* cena „środka" bez wpływu wolumenu gracza */
+  mid(d, s) { return Market.raw(d, s, S.market.x[d][s], Market.shock(d, s, false)); },
+  floodMult(d, s) { return Math.exp(-CONFIG.market.floodK * S.market.flood[d][s]); },
+  depth(d, s) { return STR[s].depth * DIS[d].demand * CONFIG.market.depthScale * (1 + S.rep[d] * CONFIG.rep.depthBonus); },
+  sellFactor(d) { return CONFIG.market.spread * (1 + S.rep[d] * CONFIG.rep.priceBonus); },
+  unitBuy(d, s) { return Market.mid(d, s) * Market.floodMult(d, s); },
+  unitSell(d, s) { return Market.mid(d, s) * Market.floodMult(d, s) * Market.sellFactor(d); },
+  quoteBuy(d, s, q) {
+    if (q <= 0) return 0;
+    const K = CONFIG.market.floodK, dp = Market.depth(d, s), f = S.market.flood[d][s];
+    const A = Market.mid(d, s) * dp / K;
+    return Math.max(1, Math.ceil(A * (Math.exp(-K * (f - q / dp)) - Math.exp(-K * f))));
+  },
+  quoteSell(d, s, q) {
+    if (q <= 0) return 0;
+    const K = CONFIG.market.floodK, dp = Market.depth(d, s), f = S.market.flood[d][s];
+    const A = Market.mid(d, s) * Market.sellFactor(d) * dp / K;
+    return Math.max(0, Math.floor(A * (Math.exp(-K * f) - Math.exp(-K * (f + q / dp)))));
+  },
+  maxBuy(d, s, budget) {
+    const cash = budget === undefined ? S.cash : Math.min(S.cash, budget);
+    const free = Game.free();
+    if (free <= 0 || cash <= 0) return 0;
+    const K = CONFIG.market.floodK, dp = Market.depth(d, s), f = S.market.flood[d][s];
+    const A = Market.mid(d, s) * dp / K * Math.exp(-K * f);
+    let q = Math.min(free, Math.floor(dp / K * Math.log(1 + cash / A)));
+    while (q > 0 && Market.quoteBuy(d, s, q) > cash) q--;
+    return Math.max(0, q);
+  },
+  cityAvg(s) { let t = 0; DISTRICTS.forEach(d => { t += Market.mid(d.id, s); }); return t / DISTRICTS.length; },
+  index(d) { let t = 0; STRAINS.forEach(s => { t += Market.mid(d, s.id) / s.base; }); return t / STRAINS.length; },
+  forecast(d, s) {
+    const base = Market.raw(d, s, S.market.xNext[d][s], Market.shock(d, s, true));
+    return base * Math.exp(-CONFIG.market.floodK * S.market.flood[d][s] * CONFIG.market.floodDecay);
+  },
+  yesterday(d, s) { const h = S.hist[s][d]; return h.length > 1 ? h[h.length - 2] : null; },
+  advance() {
+    const m = S.market;
+    DISTRICTS.forEach(d => STRAINS.forEach(s => {
+      m.x[d.id][s.id] = m.xNext[d.id][s.id];
+      m.xNext[d.id][s.id] = Market.step(m.x[d.id][s.id], s);
+      m.flood[d.id][s.id] *= CONFIG.market.floodDecay;
+      if (Math.abs(m.flood[d.id][s.id]) < 0.01) m.flood[d.id][s.id] = 0;
+    }));
+    m.shocks.forEach(sh => { sh.days--; });
+    m.shocks = m.shocks.filter(sh => sh.days > 0);
+  },
+  record(overwrite) {
+    STRAINS.forEach(s => DISTRICTS.forEach(d => {
+      const h = S.hist[s.id][d.id], v = Math.round(Market.mid(d.id, s.id) * 10) / 10;
+      if (overwrite && h.length) h[h.length - 1] = v; else h.push(v);
+      if (h.length > 80) h.shift();
+    }));
+  }
+};
+
+/* =====================================================================
+   6. LOGIKA GRY — wszystkie akcje gracza są tu walidowane
+   ===================================================================== */
+const Game = {
+  blocked() { return !S || !!S.over || !!S.pending; },
+  lvl(key) { return UPGRADES[key].levels[S.up[key]]; },
+  capacity() { return Game.lvl('stash').cap; },
+  load() { let t = 0; STRAINS.forEach(s => { t += S.inv[s.id]; }); return t; },
+  free() { return Math.max(0, Game.capacity() - Game.load()); },
+  travelCost() { return Game.lvl('transport').hours; },
+  invValue() { let t = 0; STRAINS.forEach(s => { t += S.inv[s.id] * Market.cityAvg(s.id) * 0.8; }); return t; },
+  netWorth() { return Math.round(S.cash - S.debt + Game.invValue()); },
+  workerIncome() { let t = 0; for (let i = 1; i <= S.up.workers; i++) t += UPGRADES.workers.levels[i].income; return t; },
+  creditLimit() { return Math.round(clamp(CONFIG.loan.baseLimit + CONFIG.loan.worthFactor * S.stats.peakWorth, CONFIG.loan.baseLimit, CONFIG.loan.maxLimit) / 100) * 100; },
+  canBorrow() { return Math.max(0, Game.creditLimit() - S.debt); },
+  bankruptAt() { return Game.creditLimit() * CONFIG.loan.bankruptFactor; },
+  bribeCost() { return Math.round(CONFIG.bribe.base * Math.pow(CONFIG.bribe.growth, S.bribes) / 50) * 50; },
+  raidChance() {
+    const h = CONFIG.heat; if (S.heat < h.raidFrom) return 0;
+    return clamp(h.raidBase + (S.heat - h.raidFrom) / (h.max - h.raidFrom) * h.raidSlope, 0, 0.9);
+  },
+  heatGain(d, value, factor) {
+    const h = CONFIG.heat, c = S.traded[d] || 0, v = value * factor, r = DIS[d].risk * h.saleK;
+    return r * (Math.pow((c + v) / 1000, h.pow) - Math.pow(c / 1000, h.pow));
+  },
+  addHeat(x) { S.heat = clamp(S.heat + x, 0, CONFIG.heat.max); },
+  log(icon, text, cls) { S.log.push({ d: S.day, i: icon, t: text, c: cls || '' }); if (S.log.length > 400) S.log.shift(); },
+  /* jedyna droga wydawania pieniędzy — gotówka nigdy nie spada poniżej zera */
+  pay(amount) { const a = Math.max(0, Math.min(S.cash, Math.round(amount))); S.cash -= a; return a; },
+  fine(base) { const a = Game.pay(base * Game.lvl('lawyer').fine); S.stats.fines += a; return a; },
+  loseGoods(frac) {
+    let lost = 0;
+    STRAINS.forEach(s => { const q = Math.min(S.inv[s.id], Math.ceil(S.inv[s.id] * frac)); S.inv[s.id] -= q; lost += q; });
+    S.stats.lostG += lost; return lost;
+  },
+  touchWorth() { const w = Game.netWorth(); if (w > S.stats.peakWorth) S.stats.peakWorth = w; },
+
+  start(name) {
+    S = newState(name);
+    Market.init();
+    Game.log('🌱', 'Zaczynasz na Psim Polu z ' + zl(CONFIG.startCash) + ' i plecakiem. Cel: ' + zl(CONFIG.goal) + ' w ' + CONFIG.maxDays + ' dni.', 'good');
+    Store.save();
+  },
+
+  travel(d) {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    if (!DIS[d]) return fail('Nie ma takiej dzielnicy.');
+    if (d === S.loc) return fail('Już tu jesteś.');
+    const cost = Game.travelCost();
+    if (S.hours < cost) return fail('Za mało czasu na przejazd (' + cost + ' h). Zakończ dzień.');
+    S.hours -= cost; S.loc = d; S.stats.trips++;
+    Store.save();
+    return ok(Game.lvl('transport').emoji + ' Jesteś w dzielnicy ' + DIS[d].name + '.');
+  },
+
+  buy(s, q) {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    q = Math.floor(Number(q));
+    if (!STR[s] || !(q >= 1)) return fail('Podaj ilość większą od zera.');
+    if (q > Game.free()) return fail('Schowek pęka w szwach — zmieści się jeszcze ' + Game.free() + ' g.');
+    const d = S.loc, cost = Market.quoteBuy(d, s, q);
+    if (cost > S.cash) return fail('Nie stać cię. Potrzeba ' + zl(cost) + '.');
+    const gain = Game.heatGain(d, cost, CONFIG.heat.buyFactor);
+    S.cash -= cost;
+    S.avgCost[s] = (S.avgCost[s] * S.inv[s] + cost) / (S.inv[s] + q);
+    S.inv[s] += q;
+    S.market.flood[d][s] -= q / Market.depth(d, s);
+    S.traded[d] = (S.traded[d] || 0) + cost * CONFIG.heat.buyFactor;
+    Game.addHeat(gain);
+    S.stats.boughtG += q; S.stats.spent += cost;
+    Game.log('🛒', 'Kupno: ' + q + ' g ' + STR[s].name + ' za ' + zl(cost) + ' (' + DIS[d].name + ').');
+    Game.check(); Store.save();
+    return ok('Kupiono ' + q + ' g ' + STR[s].name + ' za ' + zl(cost) + '.');
+  },
+
+  sell(s, q) {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    q = Math.floor(Number(q));
+    if (!STR[s] || !(q >= 1)) return fail('Podaj ilość większą od zera.');
+    if (q > S.inv[s]) return fail('Masz tylko ' + S.inv[s] + ' g tej odmiany.');
+    const d = S.loc, rev = Market.quoteSell(d, s, q), dp = Market.depth(d, s);
+    const gain = Game.heatGain(d, rev, 1);
+    S.cash += rev; S.inv[s] -= q;
+    if (S.inv[s] === 0) S.avgCost[s] = 0;
+    S.market.flood[d][s] += q / dp;
+    S.traded[d] = (S.traded[d] || 0) + rev;
+    Game.addHeat(gain);
+    S.rep[d] = clamp(S.rep[d] + Math.min(CONFIG.rep.capPerSale, CONFIG.rep.perDepth * q / dp), 0, CONFIG.rep.max);
+    S.stats.soldG += q; S.stats.revenue += rev; if (rev > S.stats.bestDeal) S.stats.bestDeal = rev;
+    Game.log('💸', 'Sprzedaż: ' + q + ' g ' + STR[s].name + ' za ' + zl(rev) + ' (' + DIS[d].name + ').');
+    Game.touchWorth(); Game.check(); Store.save();
+    return ok('Sprzedano ' + q + ' g ' + STR[s].name + ' za ' + zl(rev) + '.');
+  },
+
+  sellClient() {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    const d = S.loc, c = S.clients[d];
+    if (!c) return fail('Dziś nikt tu na ciebie nie czeka.');
+    const q = Math.min(S.inv[c.s], c.qty);
+    if (q < 1) return fail('Nie masz przy sobie ' + STR[c.s].name + '.');
+    const rev = Math.floor(q * c.unit);
+    const gain = Game.heatGain(d, rev, CONFIG.heat.clientFactor);
+    S.cash += rev; S.inv[c.s] -= q; if (S.inv[c.s] === 0) S.avgCost[c.s] = 0;
+    S.traded[d] = (S.traded[d] || 0) + rev * CONFIG.heat.clientFactor;
+    Game.addHeat(gain);
+    S.rep[d] = clamp(S.rep[d] + 1.5, 0, CONFIG.rep.max);
+    S.stats.soldG += q; S.stats.revenue += rev; if (rev > S.stats.bestDeal) S.stats.bestDeal = rev;
+    c.qty -= q; const who = DIS[d].client.name;
+    if (c.qty <= 0) delete S.clients[d];
+    Game.log('🤝', who + ' bierze ' + q + ' g ' + STR[c.s].name + ' za ' + zl(rev) + '.', 'good');
+    Game.touchWorth(); Game.check(); Store.save();
+    return ok(who + ' płaci ' + zl(rev) + ' za ' + q + ' g.');
+  },
+
+  plant(i, s) {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    i = Number(i);
+    if (!STR[s] || !(i >= 0 && i < S.plants.length)) return fail('Nie ma takiej doniczki.');
+    if (S.plants[i]) return fail('Ta doniczka jest zajęta.');
+    const st = STR[s];
+    if (S.cash < st.seed) return fail('Nasiono kosztuje ' + zl(st.seed) + '.');
+    S.cash -= st.seed; S.stats.spent += st.seed;
+    S.plants[i] = { s: s, left: st.days, total: st.days, grams: Math.round(st.yield * Game.lvl('lamps').mult * rnd(0.9, 1.1)), ready: false };
+    Store.save();
+    return ok('Posadzono ' + st.name + '. Zbiory za ' + st.days + ' dni.');
+  },
+  plantAll(s) {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    let n = 0;
+    for (let i = 0; i < S.plants.length; i++) { if (!S.plants[i] && STR[s] && S.cash >= STR[s].seed) { if (Game.plant(i, s).ok) n++; } }
+    return n ? ok('Posadzono ' + n + ' × ' + STR[s].name + '.') : fail('Brak wolnych doniczek albo gotówki na nasiona.');
+  },
+  harvest(i) {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    i = Number(i); const p = S.plants[i];
+    if (!p || !p.ready) return fail('Tu nie ma nic do zebrania.');
+    const q = Math.min(p.grams, Game.free());
+    if (q < 1) return fail('Schowek pełny — sprzedaj coś przed zbiorami.');
+    /* zebrany towar wchodzi do średniego kosztu po 0 zł */
+    S.avgCost[p.s] = (S.avgCost[p.s] * S.inv[p.s]) / (S.inv[p.s] + q);
+    S.inv[p.s] += q; p.grams -= q; S.stats.harvestedG += q;
+    const name = STR[p.s].name, rest = p.grams;
+    if (p.grams <= 0) S.plants[i] = null;
+    Game.touchWorth(); Store.save();
+    return ok('Zebrano ' + q + ' g ' + name + (rest > 0 ? ' (na krzaku zostało ' + rest + ' g — brak miejsca).' : '.'), { q: q });
+  },
+  harvestAll() {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    let total = 0;
+    for (let i = 0; i < S.plants.length; i++) { const p = S.plants[i]; if (p && p.ready) { const r = Game.harvest(i); if (r.ok) total += r.q; } }
+    return total ? ok('Zebrano łącznie ' + total + ' g.') : fail('Nic do zebrania albo brak miejsca w schowku.');
+  },
+
+  buyUpgrade(key) {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    const u = UPGRADES[key]; if (!u) return fail('Nie ma takiego ulepszenia.');
+    const next = u.levels[S.up[key] + 1];
+    if (!next) return fail('Masz już najwyższy poziom.');
+    if (S.cash < next.cost) return fail('Brakuje ' + zl(next.cost - S.cash) + '.');
+    S.cash -= next.cost; S.up[key]++; S.stats.upgrades++;
+    if (key === 'pots') { while (S.plants.length < next.pots) S.plants.push(null); }
+    Game.log(u.icon, 'Ulepszenie: ' + u.name + ' → ' + next.name + ' (' + zl(next.cost) + ').', 'good');
+    Store.save();
+    return ok(u.icon + ' ' + next.name + ' — kupione!');
+  },
+
+  borrow(a) {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    a = Math.floor(Number(a));
+    if (!(a >= 1)) return fail('Podaj kwotę.');
+    if (a > Game.canBorrow()) return fail('Zbyszek pożyczy ci najwyżej ' + zl(Game.canBorrow()) + '.');
+    S.debt += a; S.cash += a;
+    Game.log('🦈', 'Pożyczka od Zbyszka: ' + zl(a) + '. Odsetki ' + Math.round(CONFIG.loan.rate * 100) + '% dziennie.', 'warn');
+    Store.save();
+    return ok('Zbyszek odlicza ' + zl(a) + '. „Tylko nie zapomnij."');
+  },
+  repay(a) {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    a = Math.floor(Number(a));
+    if (!(a >= 1)) return fail('Podaj kwotę.');
+    if (a > S.debt) a = S.debt;
+    if (a > S.cash) return fail('Nie masz tyle gotówki.');
+    if (a < 1) return fail('Nie masz długu.');
+    S.cash -= a; S.debt -= a;
+    Game.log('🦈', 'Spłata długu: ' + zl(a) + '.' + (S.debt === 0 ? ' Jesteś czysty!' : ''), 'good');
+    Game.check(); Store.save();
+    return ok('Spłacono ' + zl(a) + '.' + (S.debt === 0 ? ' Zbyszek uchyla kaszkietu.' : ''));
+  },
+  bribe() {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    if (S.heat < CONFIG.bribe.minHeat) return fail('Nikt się tobą nie interesuje — szkoda koperty.');
+    const cost = Game.bribeCost();
+    if (S.cash < cost) return fail('Koperta musi ważyć ' + zl(cost) + '.');
+    S.cash -= cost; S.bribes++; Game.addHeat(-CONFIG.bribe.heat);
+    Game.log('✉️', 'Koperta dla dzielnicowego: ' + zl(cost) + '. Uwaga policji −' + CONFIG.bribe.heat + '.');
+    Store.save();
+    return ok('Dzielnicowy nagle patrzy w inną stronę.');
+  },
+
+  genClients() {
+    S.clients = {};
+    DISTRICTS.forEach(d => {
+      const r = S.rep[d.id];
+      if (r < CONFIG.rep.clientAt) return;
+      let total = 0; STRAINS.forEach(s => { total += d.aff[s.id]; });
+      let roll = Math.random() * total, chosen = STRAINS[0];
+      for (const s of STRAINS) { roll -= d.aff[s.id]; if (roll <= 0) { chosen = s; break; } }
+      const frac = r >= CONFIG.rep.vipAt ? CONFIG.rep.vipQty : CONFIG.rep.clientQty;
+      S.clients[d.id] = { s: chosen.id, qty: Math.max(5, Math.round(Market.depth(d.id, chosen.id) * frac)), unit: Math.round(Market.mid(d.id, chosen.id) * CONFIG.rep.clientPremium) };
+    });
+  },
+
+  /* ---------- koniec dnia ---------- */
+  endDay() {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    const lines = [], H = CONFIG.heat, endedDay = S.day;
+    const add = (i, t, c) => { lines.push({ i: i, t: t, c: c || '' }); Game.log(i, t, c); };
+
+    if (S.debt > 0) {
+      const before = S.debt; S.debt = Math.ceil(S.debt * (1 + CONFIG.loan.rate)); S.stats.interest += S.debt - before;
+      add('🦈', 'Zbyszek dolicza odsetki: +' + zl(S.debt - before) + ' (dług: ' + zl(S.debt) + ').', 'warn');
+    }
+    const inc = Game.workerIncome();
+    if (inc > 0) {
+      const got = Math.round(inc * rnd(0.8, 1.2)); S.cash += got; S.stats.passive += got;
+      add('🧑‍🤝‍🧑', 'Ekipa rozlicza utarg: +' + zl(got) + '.', 'good');
+      Game.addHeat(S.up.workers * H.workerDaily);
+    }
+    let ripe = 0;
+    S.plants.forEach(p => { if (p && !p.ready) { p.left--; if (p.left <= 0) { p.left = 0; p.ready = true; ripe++; } } });
+    if (ripe) add('🌿', 'Dojrzały rośliny: ' + ripe + ' szt. czeka na zbiór.', 'good');
+
+    if (Math.random() < Game.raidChance()) {
+      const law = Game.lvl('lawyer');
+      const lost = Game.loseGoods(H.raidGoodsLoss * law.goods);
+      const fine = Game.fine(S.cash * H.raidFine);
+      let plants = 0;
+      S.plants.forEach((p, i) => { if (p && Math.random() < H.raidPlantLoss) { S.plants[i] = null; plants++; } });
+      S.stats.raids++; Game.addHeat(-H.raidCooldown);
+      add('🚔', 'NALOT! Policja wpada o 6:00. Tracisz ' + lost + ' g towaru' + (plants ? ', ' + plants + ' roślin' : '') + ' i płacisz ' + zl(fine) + ' grzywny.' + (S.up.lawyer ? ' Prawnik wynegocjował zniżkę.' : ''), 'bad');
+    }
+    Game.addHeat(-H.decay);
+
+    Market.advance();
+    S.day++; S.hours = clamp(CONFIG.hoursPerDay + (S.nextHoursMod || 0), Game.travelCost(), 24); S.nextHoursMod = 0; S.traded = {};
+    S.report = { day: endedDay, lines: lines, ev: null, seen: false };
+
+    if (!Game.nightCheck()) {
+      S.report.ev = Events.roll();
+      Market.record();
+      Game.genClients();
+      Game.touchWorth();
+      Game.check();
+    }
+    Store.save();
+    return ok('', { report: S.report });
+  },
+
+  /* warunki sprawdzane tylko nocą; zwraca true, gdy gra się skończyła */
+  nightCheck() {
+    if (S.over) return true;
+    Game.touchWorth();
+    if (S.day > CONFIG.maxDays) {
+      if (S.cash - S.debt >= CONFIG.goal) { S.cash -= S.debt; S.debt = 0; S.day = CONFIG.maxDays; return Game.finish(true, 'win'); }
+      return Game.finish(false, 'time');
+    }
+    if (S.debt > Game.bankruptAt()) return Game.finish(false, 'debt');
+    const hasPlants = S.plants.some(p => p), cheapest = Math.min.apply(null, STRAINS.map(s => s.seed));
+    if (S.cash < 30 && Game.load() === 0 && !hasPlants && S.up.workers === 0 && Game.canBorrow() < cheapest) return Game.finish(false, 'broke');
+    return false;
+  },
+  /* warunki sprawdzane po każdej akcji */
+  check() {
+    if (!S || S.over) return !!(S && S.over);
+    if (S.heat >= CONFIG.heat.max) return Game.finish(false, 'arrest');
+    if (S.cash >= CONFIG.goal && S.debt === 0) return Game.finish(true, 'win');
+    return false;
+  },
+  finish(win, reason) {
+    const worth = Game.netWorth();
+    const score = win ? CONFIG.score.winBase + (CONFIG.maxDays - Math.min(S.day, CONFIG.maxDays)) * CONFIG.score.perDayLeft + Math.max(0, S.cash - CONFIG.goal) : Math.max(0, worth);
+    S.over = { win: win, reason: reason, score: Math.round(score), worth: worth, day: Math.min(S.day, CONFIG.maxDays) };
+    S.pending = null;
+    S.over.rank = Store.addScore({ id: S.id, name: S.name, score: S.over.score, win: win, day: S.over.day, date: new Date().toISOString().slice(0, 10) });
+    Store.clear();
+    return true;
+  }
+};
+
+/* =====================================================================
+   7. ZDARZENIA LOSOWE
+   run()    -> { text, good } albo { text, data, choices:[{label,hint,off}] }
+   choose() -> { text, good }
+   ===================================================================== */
+const EVENTS = [
+  { id:'hype', w:8, icon:'🎤', title:'Hit na osiedlach',
+    run() { const s = pick(STRAINS); Market.addShock(null, s.id, 1.6, 2);
+      return { text: 'Raper Młody Odra nawinął o „' + s.name + '" w nowym singlu. Całe miasto chce tylko tego — ceny ' + s.name + ' +60% przez 2 dni.', good: true }; } },
+  { id:'glut', w:8, icon:'🚛', title:'Krach cenowy',
+    run() { const s = pick(STRAINS); Market.addShock(null, s.id, 0.55, 2);
+      return { text: 'Tir z Holandii „zgubił" ładunek pod Bielanami. ' + s.name + ' leży na każdym rogu — ceny −45% przez 2 dni. Dobry moment na zakupy.', good: false }; } },
+  { id:'drought', w:5, icon:'🏜️', title:'Susza w mieście',
+    run() { Market.addShock(null, null, 1.25, 2);
+      return { text: 'Wielka łapanka na granicy — do Wrocławia nic nie dojeżdża. Wszystkie ceny +25% przez 2 dni.', good: true }; } },
+  { id:'festival', w:7, icon:'🎪', title:'Festiwal muzyczny',
+    run() { const d = pick(DISTRICTS); Market.addShock(d.id, null, 1.45, 2);
+      return { text: 'Trzydniowy festiwal elektroniki rozbija namioty: ' + d.name + '. Tłumy spragnionych wrażeń — ceny w tej dzielnicy +45% przez 2 dni.', good: true }; } },
+  { id:'juwenalia', w:5, icon:'🎓', title:'Juwenalia',
+    run() { Market.addShock('biskupin', null, 1.5, 2);
+      return { text: 'Studenci przejęli klucze do miasta. Biskupin nie śpi — ceny +50% przez 2 dni.', good: true }; } },
+  { id:'rivalbust', w:6, icon:'🚓', title:'Wpadka konkurencji',
+    run() { const d = pick(DISTRICTS); Market.addShock(d.id, null, 1.3, 2);
+      return { text: 'Ekipa „Łysego" zwinięta w kajdankach. ' + d.name + ' zostaje bez dostawcy — ceny +30% przez 2 dni.', good: true }; } },
+  { id:'match', w:5, icon:'⚽', title:'Mecz podwyższonego ryzyka', cond() { return S.heat > 10; },
+    run() { Game.addHeat(-15);
+      return { text: 'Śląsk gra derby i cała komenda pilnuje stadionu. Nikt nie ma czasu na ciebie — uwaga policji −15.', good: true }; } },
+  { id:'influencer', w:5, icon:'📱', title:'Darmowa reklama',
+    run() { const d = pick(DISTRICTS); S.rep[d.id] = clamp(S.rep[d.id] + 12, 0, CONFIG.rep.max);
+      return { text: 'Lokalna influencerka wrzuciła relację „mój sprawdzony ziomek". ' + d.name + ': reputacja +12.', good: true }; } },
+  { id:'pickpocket', w:5, icon:'🧤', title:'Kieszonkowiec', cond() { return S.cash > 500; },
+    run() { const a = Game.pay(S.cash * 0.07);
+      return { text: 'Tłok w tramwaju linii 0. Ktoś wysiadł bogatszy o ' + zl(a) + ' z twojej kieszeni.', good: false }; } },
+  { id:'gnome', w:4, icon:'🧙', title:'Krasnal Szczęściarz',
+    run() { const a = Math.round(rnd(150, 400) + Math.max(0, Game.netWorth()) * 0.02); S.cash += a;
+      return { text: 'Potykasz się o krasnala na Świdnickiej. Pod figurką leży koperta: +' + zl(a) + '. Wrocław daje, Wrocław zabiera.', good: true }; } },
+  { id:'roadworks', w:4, icon:'🚧', title:'Remont torowiska',
+    run() { S.nextHoursMod = -3;
+      return { text: 'Miasto rozkopało trzy skrzyżowania naraz. Jutro masz o 3 godziny mniej na jeżdżenie.', good: false }; } },
+  { id:'bumper', w:5, icon:'🌞', title:'Rekordowe zbiory', cond() { return S.plants.some(p => p && !p.ready); },
+    run() { S.plants.forEach(p => { if (p && !p.ready) p.grams = Math.round(p.grams * 1.3); });
+      return { text: 'Idealna wilgotność, Chopin z głośnika i rośliny oszalały. Rosnące krzaki dadzą o 30% większy plon.', good: true }; } },
+  { id:'birthday', w:4, icon:'🎂', title:'Urodziny Zbyszka', cond() { return S.debt > 500; },
+    run() { const a = Math.floor(S.debt * 0.1); S.debt -= a;
+      return { text: 'Zbyszek kończy 50 lat i ma gest: umarza ci ' + zl(a) + ' długu. „Ale tort przynieś."', good: true }; } },
+
+  { id:'stop', w:8, icon:'🚨', title:'Kontrola drogowa', cond() { return Game.load() > 0; },
+    run() {
+      const bribe = Math.max(200, Math.round(S.cash * 0.08)), esc0 = Game.lvl('transport').escape;
+      return { text: 'Niebieskie światła w lusterku. „Dzień dobry, kontrola. Co wieziemy?"', data: { bribe: bribe, esc: esc0 },
+        choices: [
+          { label: '💵 „Może się dogadamy?" (' + zl(bribe) + ')', hint: 'Pewne wyjście, o ile masz gotówkę.', off: S.cash < bribe },
+          { label: '💨 Gaz do dechy!', hint: 'Szansa ucieczki ' + Math.round(esc0 * 100) + '%. Porażka: tracisz 40% towaru, grzywna i +15 uwagi.' },
+          { label: '🙄 Poddaj się kontroli', hint: 'Tracisz 25% towaru i +8 uwagi.' } ] };
+    },
+    choose(i, data) {
+      if (i === 0) { const a = Game.pay(data.bribe); Game.addHeat(2); return { text: 'Funkcjonariusz chowa ' + zl(a) + ' do notesu. „Proszę jechać ostrożnie."', good: true }; }
+      if (i === 1) {
+        if (Math.random() < data.esc) { Game.addHeat(5); return { text: 'Skręt w bramę, podwórko, drugie podwórko… zgubieni! Uwaga +5, ale towar cały.', good: true }; }
+        const lost = Game.loseGoods(0.4), fine = Game.fine(S.cash * 0.1); Game.addHeat(15);
+        return { text: 'Łańcuch spadł w najgorszym momencie. Tracisz ' + lost + ' g, płacisz ' + zl(fine) + ' grzywny, uwaga +15.', good: false };
+      }
+      const lost = Game.loseGoods(0.25); Game.addHeat(8);
+      return { text: 'Konfiskują ' + lost + ' g „do badań". Uwaga +8. Mogło być gorzej.', good: false };
+    } },
+
+  { id:'rival', w:7, icon:'😤', title:'Konkurencja na rewirze',
+    run() {
+      const known = DISTRICTS.filter(d => S.rep[d.id] > 5), d = pick(known.length ? known : DISTRICTS);
+      const cost = Math.max(300, Math.round(S.cash * 0.05));
+      return { text: 'Nowa ekipa rozdaje próbki za darmo: ' + d.name + '. Psują ci rynek.', data: { d: d.id, cost: cost },
+        choices: [
+          { label: '🤷 Odpuść im', hint: 'Ceny w dzielnicy −25% przez 3 dni, reputacja −8.' },
+          { label: '🎁 Wojna na promocje (' + zl(cost) + ')', hint: 'Utrzymujesz ceny, reputacja +6.', off: S.cash < cost },
+          { label: '📞 Anonimowy telefon', hint: 'Konkurencja znika, ceny +15% na 2 dni, ale uwaga policji +10.' } ] };
+    },
+    choose(i, data) {
+      const d = DIS[data.d];
+      if (i === 0) { Market.addShock(d.id, null, 0.75, 3); S.rep[d.id] = clamp(S.rep[d.id] - 8, 0, 100); return { text: 'Machasz ręką. ' + d.name + ': ceny −25% przez 3 dni, reputacja −8.', good: false }; }
+      if (i === 1) { const a = Game.pay(data.cost); S.rep[d.id] = clamp(S.rep[d.id] + 6, 0, 100); return { text: 'Gratisy, naklejki i karta stałego klienta za ' + zl(a) + '. Konkurencja zwija stoisko, reputacja +6.', good: true }; }
+      Market.addShock(d.id, null, 1.15, 2); Game.addHeat(10);
+      return { text: 'Następnego dnia rewir jest pusty i ceny rosną o 15%. Ale patrole kręcą się częściej — uwaga +10.', good: true };
+    } },
+
+  { id:'bulk', w:7, icon:'📦', title:'Okazyjny hurt', cond() { return Game.free() >= 20 && S.cash >= 200; },
+    run() {
+      const s = pick(STRAINS), unit = Math.max(1, Math.round(Market.cityAvg(s.id) * 0.55));
+      const q = Math.min(Game.free(), Math.floor(S.cash / unit), Math.round(STR[s.id].depth * CONFIG.market.depthScale * 1.2));
+      return { text: 'Znajomy znajomego musi „szybko upłynnić partię". ' + s.name + ' po ' + zl(unit) + '/g (ok. połowy ceny rynkowej).', data: { s: s.id, q: q, unit: unit },
+        choices: [
+          { label: '🤝 Biorę ' + q + ' g za ' + zl(q * unit), hint: 'Niewielkie ryzyko, że część to oregano.', off: q < 1 },
+          { label: '✋ Podziękuję', hint: 'Okazje nie uciekną. Chyba.' } ] };
+    },
+    choose(i, data) {
+      if (i === 1) return { text: 'Odmawiasz. Gość wzrusza ramionami i znika w bramie.', good: true };
+      const q = Math.min(data.q, Game.free(), Math.floor(S.cash / data.unit));
+      if (q < 1) return { text: 'Nie masz ani miejsca, ani gotówki. Interes przepadł.', good: false };
+      const cost = Game.pay(q * data.unit); S.stats.spent += cost;
+      let real = q, extra = '';
+      if (Math.random() < 0.12) { real = Math.floor(q / 2); extra = ' Niestety połowa worka to suszone oregano.'; }
+      S.avgCost[data.s] = (S.avgCost[data.s] * S.inv[data.s] + cost) / (S.inv[data.s] + Math.max(1, real));
+      S.inv[data.s] += real; S.stats.boughtG += real;
+      return { text: 'Kupujesz ' + real + ' g ' + STR[data.s].name + ' za ' + zl(cost) + '.' + extra, good: !extra };
+    } },
+
+  { id:'vip', w:7, icon:'🕶️', title:'Klient VIP', cond() { return STRAINS.some(s => S.inv[s.id] >= 20); },
+    run() {
+      const s = pick(STRAINS.filter(x => S.inv[x.id] >= 20));
+      const q = Math.min(S.inv[s.id], Math.round(STR[s.id].depth * CONFIG.market.depthScale * 0.8)), unit = Math.round(Market.cityAvg(s.id) * 1.9);
+      return { text: 'Czarne BMW, przyciemniane szyby. „Szef robi imprezę. Potrzebuje ' + s.name + ', płaci ' + zl(unit) + '/g i nie lubi czekać."', data: { s: s.id, q: q, unit: unit },
+        choices: [
+          { label: '💰 Sprzedaj ' + q + ' g za ' + zl(q * unit), hint: 'Prawie dwukrotność ceny. 15% szans, że to tajniak (+18 uwagi).' },
+          { label: '🚪 „Pomyłka, sprzedaję kwiaty"', hint: 'Bez ryzyka, bez zysku.' } ] };
+    },
+    choose(i, data) {
+      if (i === 1) return { text: 'BMW odjeżdża z piskiem opon. Zostaje zapach drogiej wody kolońskiej.', good: true };
+      const q = Math.min(data.q, S.inv[data.s]);
+      if (q < 1) return { text: 'Nie masz już tego towaru.', good: false };
+      const rev = q * data.unit; S.inv[data.s] -= q; if (S.inv[data.s] === 0) S.avgCost[data.s] = 0;
+      S.cash += rev; S.stats.soldG += q; S.stats.revenue += rev; if (rev > S.stats.bestDeal) S.stats.bestDeal = rev;
+      if (Math.random() < 0.15) { Game.addHeat(18); return { text: 'Kasa się zgadza: +' + zl(rev) + '. Ale „szef" miał w klapie mikrofon — uwaga policji +18.', good: false }; }
+      return { text: 'Gładka transakcja: +' + zl(rev) + ' za ' + q + ' g. Szef pozdrawia.', good: true };
+    } },
+
+  { id:'neighbor', w:6, icon:'👃', title:'Sąsiad coś wyczuł',
+    run() {
+      const cost = Math.round(300 + S.cash * 0.02);
+      return { text: 'Pan Mietek spod siódemki puka do drzwi. „U pana to chyba jakieś… zioła się suszą?"', data: { cost: cost },
+        choices: [
+          { label: '🥒 Słoik ogórków i ' + zl(cost), hint: 'Mietek zapomina o sprawie.', off: S.cash < cost },
+          { label: '🙉 „To kadzidełka"', hint: '50% szans, że zadzwoni na dzielnicowego (+14 uwagi).' } ] };
+    },
+    choose(i, data) {
+      if (i === 0) { const a = Game.pay(data.cost); return { text: 'Mietek przelicza ' + zl(a) + ' i stwierdza, że ma katar. Sprawa zamknięta.', good: true }; }
+      if (Math.random() < 0.5) { Game.addHeat(14); return { text: 'Mietek nie uwierzył. Wieczorem pod blokiem stoi radiowóz — uwaga +14.', good: false }; }
+      return { text: 'Mietek kiwa głową: „Żona też takie pali". Upiekło ci się.', good: true };
+    } },
+
+  { id:'wallet', w:5, icon:'👛', title:'Zguba na chodniku',
+    run() {
+      const a = Math.round(clamp(200 + Math.max(0, Game.netWorth()) * 0.03, 200, 6000));
+      return { text: 'Na przystanku leży wypchany portfel. W środku ' + zl(a) + ' i legitymacja radnego.', data: { a: a },
+        choices: [
+          { label: '😇 Oddaj właścicielowi', hint: 'Reputacja +8 w dzielnicy, w której jesteś.' },
+          { label: '😈 Znalezione, nie kradzione', hint: '+' + zl(a) + ' do kieszeni.' } ] };
+    },
+    choose(i, data) {
+      if (i === 0) { S.rep[S.loc] = clamp(S.rep[S.loc] + 8, 0, 100); return { text: 'Radny ściska ci dłoń i opowiada o tobie całej dzielnicy. ' + DIS[S.loc].name + ': reputacja +8.', good: true }; }
+      S.cash += data.a; return { text: 'Portfel ląduje w koszu, ' + zl(data.a) + ' w kieszeni. Sumienie milczy.', good: true };
+    } },
+
+  { id:'pests', w:6, icon:'🐛', title:'Przędziorki atakują', cond() { return S.plants.some(p => p && !p.ready); },
+    run() {
+      const cost = Math.round(250 + S.plants.filter(p => p).length * 60);
+      return { text: 'Na liściach pojawiły się podejrzane pajęczynki. Rośliny patrzą na ciebie z wyrzutem.', data: { cost: cost },
+        choices: [
+          { label: '🧴 Ekologiczny oprysk (' + zl(cost) + ')', hint: 'Ratuje wszystkie rośliny.', off: S.cash < cost },
+          { label: '🍀 Natura sobie poradzi', hint: 'Każda rosnąca roślina ma 35% szans, że uschnie.' } ] };
+    },
+    choose(i, data) {
+      if (i === 0) { const a = Game.pay(data.cost); return { text: 'Oprysk z czosnku i pokrzywy za ' + zl(a) + '. Śmierdzi, ale działa.', good: true }; }
+      let dead = 0; S.plants.forEach((p, k) => { if (p && !p.ready && Math.random() < 0.35) { S.plants[k] = null; dead++; } });
+      return dead ? { text: 'Natura sobie nie poradziła. Uschło roślin: ' + dead + '.', good: false } : { text: 'Biedronki zjadły przędziorki. Zero strat!', good: true };
+    } },
+
+  { id:'shark', w:6, icon:'🦈', title:'Zbyszek się niecierpliwi', cond() { return S.debt > 2000; },
+    run() {
+      const part = Math.ceil(S.debt * 0.25);
+      return { text: 'Pod klatką czeka Zbyszek z dwoma kolegami o szerokich karkach. „Przypominam o naszej umowie."', data: { part: part },
+        choices: [
+          { label: '💵 Spłać 25% od ręki (' + zl(part) + ')', hint: 'Zbyszek odchodzi zadowolony.', off: S.cash < part },
+          { label: '🙏 „Jutro, słowo honoru"', hint: 'Karne +10% do długu.' } ] };
+    },
+    choose(i, data) {
+      if (i === 0) { const a = Math.min(Game.pay(data.part), S.debt); S.debt -= a; return { text: 'Oddajesz ' + zl(a) + '. Zbyszek klepie cię po plecach — trochę za mocno.', good: true }; }
+      const extra = Math.ceil(S.debt * 0.1); S.debt += extra;
+      return { text: 'Zbyszek cmoka z dezaprobatą i dopisuje ' + zl(extra) + ' „za fatygę".', good: false };
+    } },
+
+  { id:'journalist', w:5, icon:'📰', title:'Dziennikarz śledczy',
+    run() {
+      const cost = Math.round(500 + S.cash * 0.04);
+      return { text: 'Redaktor z lokalnego portalu szykuje tekst „Zielone podziemie Wrocławia". Ma twoje zdjęcie — na szczęście nieostre.', data: { cost: cost },
+        choices: [
+          { label: '🤫 Sponsoruj mu „urlop" (' + zl(cost) + ')', hint: 'Tekst nigdy się nie ukazuje.', off: S.cash < cost },
+          { label: '🗞️ Niech pisze', hint: 'Uwaga policji +12, ale reputacja +4 w każdej dzielnicy.' } ] };
+    },
+    choose(i, data) {
+      if (i === 0) { const a = Game.pay(data.cost); return { text: 'Redaktor leci na Zanzibar za ' + zl(a) + '. Artykuł o dziurach w jezdni też się przyda.', good: true }; }
+      Game.addHeat(12); DISTRICTS.forEach(d => { S.rep[d.id] = clamp(S.rep[d.id] + 4, 0, 100); });
+      return { text: 'Tekst ma 40 tysięcy odsłon. Policja czyta uważnie (+12 uwagi), klienci też (reputacja +4 wszędzie).', good: false };
+    } },
+
+  { id:'busted', w:6, icon:'⛓️', title:'Pracownik wpadł', cond() { return S.up.workers > 0; },
+    run() {
+      const lv = UPGRADES.workers.levels[S.up.workers], cost = Math.round(lv.cost * 0.25);
+      return { text: lv.name + ' dał się złapać z towarem w kieszeni i siedzi na dołku.', data: { cost: cost },
+        choices: [
+          { label: '🔑 Wpłać kaucję (' + zl(cost) + ')', hint: 'Wraca do pracy, jakby nigdy nic.', off: S.cash < cost },
+          { label: '🤐 „Nie znam człowieka"', hint: 'Tracisz najwyższy poziom pracowników, uwaga +6.' } ] };
+    },
+    choose(i, data) {
+      if (i === 0) { const a = Game.pay(data.cost); return { text: 'Kaucja ' + zl(a) + ' wpłacona. Lojalność kosztuje, ale się opłaca.', good: true }; }
+      const lv = UPGRADES.workers.levels[S.up.workers]; S.up.workers = Math.max(0, S.up.workers - 1); Game.addHeat(6);
+      return { text: lv.name + ' obraził się i zaczął śpiewać. Tracisz pracownika, uwaga +6.', good: false };
+    } }
+];
+const EV = {}; EVENTS.forEach(e => EV[e.id] = e);
+
+const Events = {
+  roll() {
+    if (Math.random() > CONFIG.events.chance) {
+      const ev = { id: 'calm', icon: '😴', title: 'Spokojna noc', text: 'Nic się nie wydarzyło. Nawet sąsiad nie wiercił.', good: true };
+      return ev;
+    }
+    const pool = EVENTS.filter(e => e.id !== S.lastEvent && (!e.cond || e.cond()));
+    let total = 0; pool.forEach(e => { total += e.w; });
+    let r = Math.random() * total, chosen = pool[0];
+    for (const e of pool) { r -= e.w; if (r <= 0) { chosen = e; break; } }
+    const res = chosen.run();
+    S.lastEvent = chosen.id; S.stats.events++;
+    const ev = { id: chosen.id, icon: chosen.icon, title: chosen.title, text: res.text, good: res.good };
+    if (res.choices) { ev.choices = res.choices; ev.data = res.data || {}; S.pending = ev; }
+    else Game.log(chosen.icon, chosen.title + ': ' + res.text, res.good ? 'good' : 'bad');
+    return ev;
+  },
+  choose(i) {
+    const ev = S && S.pending;
+    if (!ev || S.over) return fail('Nie ma zdarzenia do rozstrzygnięcia.');
+    i = Number(i); const ch = ev.choices[i];
+    if (!ch) return fail('Nie ma takiej opcji.');
+    if (ch.off) return fail('Na tę opcję cię nie stać.');
+    const res = EV[ev.id].choose(i, ev.data);
+    ev.result = res.text; ev.good = res.good; ev.chosen = i;
+    S.pending = null;
+    if (S.report) S.report.ev = ev;
+    Game.log(ev.icon, ev.title + ' — ' + ch.label + ' → ' + res.text, res.good ? 'good' : 'bad');
+    Market.record(true);
+    Game.touchWorth();
+    Game.check();
+    Store.save();
+    return ok(res.text);
+  }
+};
+
+/* =====================================================================
+   8. UI
+   ===================================================================== */
+const TUTORIAL = [
+  { i:'🌿', t:'Witaj we Wrocławiu!', x:'Masz 500 zł, szkolny plecak i plan: zebrać <b>1 000 000 zł w 60 dni</b> i otworzyć legalną sieć dispensary. Proste? No właśnie.' },
+  { i:'🗺️', t:'Mapa miasta', x:'Sześć dzielnic, każda z innymi cenami i ryzykiem. Na obrzeżach (Psie Pole, Fabryczna) jest tanio, w centrum drogo. Przejazd kosztuje godziny — dzień ma ich 12.' },
+  { i:'📈', t:'Rynek', x:'Kupuj tanio, sprzedawaj drogo. Suwak ustawia ilość, przycisk MAX bierze wszystko. Uwaga: duże transakcje ruszają cenę — zalany rynek płaci mniej.' },
+  { i:'🪴', t:'Hodowla', x:'Nasiono + kilka dni cierpliwości = darmowy towar. Zacznij od dwóch doniczek na parapecie, z czasem dokup growbox i lampy.' },
+  { i:'🚨', t:'Uwaga policji', x:'Rośnie przy handlu, najszybciej w bogatych dzielnicach. Od 50 grożą nocne naloty, przy <b>100 lądujesz w areszcie</b>. Spada sama o kilka punktów dziennie, resztę załatwia koperta.' },
+  { i:'⬆️', t:'Inwestuj i kombinuj', x:'Ulepszenia, pracownicy, reputacja w dzielnicach i lichwiarz Zbyszek (6% dziennie!). Każdy wskaźnik na górze ma podpowiedź. Klawisze: <b>1–5</b> widoki, <b>N</b> koniec dnia. Powodzenia!' }
+];
+const VIEWS = [
+  { id:'map', name:'Mapa', icon:'🗺️' }, { id:'market', name:'Rynek', icon:'📈' }, { id:'grow', name:'Hodowla', icon:'🪴' },
+  { id:'upgrades', name:'Ulepszenia', icon:'⬆️' }, { id:'log', name:'Dziennik', icon:'📜' }
+];
+const REASONS = {
+  win:    { i:'🏆', t:'IMPERIUM OTWARTE!', x:'Milion na koncie, długi spłacone. Przecinasz wstęgę pierwszego salonu „Zielony Wrocław" przy Rynku. Krasnale biją brawo, a ty pierwszy raz w życiu wystawiasz paragon.' },
+  time:   { i:'⌛', t:'Czas minął', x:'60 dni za tobą, a milion wciąż przed tobą. Licencję na dispensary zgarnia sieć z Poznania. Tego Wrocław ci nie wybaczy.' },
+  arrest: { i:'🚔', t:'Areszt!', x:'Uwaga policji sięgnęła 100. O szóstej rano drzwi wjeżdżają do środka razem z futryną. Masz prawo zachować milczenie i zdecydowanie powinieneś.' },
+  debt:   { i:'🦈', t:'Zbyszek przejmuje interes', x:'Dług przerósł wszystko, co masz. Zbyszek zabiera towar, rower i klucze. Zostawia ci tylko wizytówkę: „Na przyszłość — czytaj umowy".' },
+  broke:  { i:'🪙', t:'Bankructwo', x:'Pusta kieszeń, pusty schowek, puste doniczki i nikt nie chce pożyczyć. Wracasz do rozdawania ulotek na Świdnickiej.' }
+};
+
+const UI = {
+  view: 'map', strain: 'lemon', mode: 'buy', qty: 0, sel: null, seed: 'lemon', overlay: null, lastCash: null, loanAmt: 0,
+  $: id => document.getElementById(id),
+
+  init() {
+    document.body.addEventListener('click', UI.onClick);
+    document.body.addEventListener('input', UI.onInput);
+    document.addEventListener('keydown', UI.onKey);
+    window.addEventListener('resize', () => { if (S && UI.view === 'market') UI.drawChart(); });
+    UI.overlay = 'menu';
+    UI.render();
+  },
+
+  toast(msg, cls) {
+    const el = document.createElement('div'); el.className = 'toast ' + (cls || ''); el.textContent = msg;
+    const box = UI.$('toasts'); box.appendChild(el);
+    while (box.children.length > 3) box.removeChild(box.firstChild);
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 3300);
+  },
+  result(r) { if (r && r.msg) UI.toast(r.msg, r.ok ? '' : 'bad'); UI.render(); return r; },
+
+  /* ---------- render główny ---------- */
+  render() {
+    const app = UI.$('app');
+    if (S) { app.classList.add('on'); UI.renderTop(); UI.renderNav(); UI.renderView(); } else app.classList.remove('on');
+    UI.renderModal();
+  },
+
+  renderTop() {
+    const heat = Math.floor(S.heat), cap = Game.capacity(), load = Game.load();
+    const heatCls = heat >= 70 ? 'heat-hot' : '';
+    const goalPct = clamp(S.cash / CONFIG.goal * 100, 0, 100);
+    const flash = UI.lastCash !== null && UI.lastCash !== S.cash ? ' flash' : '';
+    UI.lastCash = S.cash;
+    UI.$('topbar').innerHTML =
+      '<div class="stats">' +
+      '<div class="stat" tabindex="0" data-tip="Dzień gry i godziny, które zostały dziś na przejazdy. Po 60. dniu licencję dostaje ktoś inny.">' +
+        '<div class="lbl">📅 Dzień</div><div class="val">' + Math.min(S.day, CONFIG.maxDays) + '/' + CONFIG.maxDays + ' <small>⏱ ' + S.hours + ' h</small></div></div>' +
+      '<div class="stat" tabindex="0" data-tip="Twoja gotówka. Cel: ' + zl(CONFIG.goal) + ' przy zerowym długu. Zielony pasek poniżej pokazuje postęp.">' +
+        '<div class="lbl">💵 Gotówka</div><div class="val good' + flash + '">' + zl(S.cash) + '</div></div>' +
+      '<div class="stat" tabindex="0" data-tip="Dług u lichwiarza Zbyszka. Rośnie o ' + Math.round(CONFIG.loan.rate * 100) + '% każdej nocy. Powyżej ' + zl(Game.bankruptAt()) + ' Zbyszek zabiera cały interes.">' +
+        '<div class="lbl">🦈 Dług</div><div class="val ' + (S.debt > 0 ? 'bad' : '') + '">' + zl(S.debt) + '</div></div>' +
+      '<div class="stat" tabindex="0" data-tip="Zajęte miejsce w schowku (w gramach). Większy schowek kupisz w Ulepszeniach.">' +
+        '<div class="lbl">🎒 Schowek</div><div class="val ' + (load >= cap ? 'warn' : '') + '">' + num(load) + '/' + num(cap) + ' g</div></div>' +
+      '<div class="stat heat tr ' + heatCls + '" tabindex="0" data-tip="Uwaga policji 0–100. Rośnie przy handlu (mocniej w bogatych dzielnicach), spada o ' + CONFIG.heat.decay + ' dziennie. Od ' + CONFIG.heat.raidFrom + ' grożą nocne naloty, 100 = areszt i koniec gry.">' +
+        '<div class="lbl">🚨 Uwaga policji</div><div class="val">' + heat + '/100</div><div class="heatbar"><i style="width:' + heat + '%"></i></div></div>' +
+      '<button class="menu-btn" data-act="menu" aria-label="Menu" title="Menu (Esc)">☰</button>' +
+      '</div><div class="goal" title="Postęp do miliona"><i style="width:' + goalPct + '%"></i></div>';
+  },
+
+  renderNav() {
+    const ready = S.plants.filter(p => p && p.ready).length;
+    let h = '';
+    VIEWS.forEach((v, i) => {
+      const badge = v.id === 'grow' && ready ? '<span class="badge">' + ready + '</span>' : '';
+      h += '<button class="tab ' + (UI.view === v.id ? 'on' : '') + '" data-act="view" data-arg="' + v.id + '"><span class="ti">' + v.icon + '</span><span>' + v.name + '</span>' + badge + '<kbd>' + (i + 1) + '</kbd></button>';
+    });
+    h += '<button class="btn night" data-act="endDay">🌙 <span class="hide-m">Zakończ dzień</span><span class="show-m">Noc</span><kbd>N</kbd></button>';
+    UI.$('nav').innerHTML = h;
+  },
+
+  renderView() {
+    const el = UI.$('view');
+    const key = UI.view + '|' + S.day;
+    el.innerHTML = UI.views[UI.view]();
+    if (UI.lastViewKey !== key) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; UI.lastViewKey = key; }
+    if (UI.view === 'market') { UI.updateTrade(); UI.drawChart(); }
+    if (UI.view === 'upgrades') UI.updateLoan();
+  },
+
+  canForecast(d) { return S.up.informant >= 2 || (S.up.informant >= 1 && d === S.loc); },
+  arrow(now, next) {
+    const ch = (next - now) / now;
+    if (ch > 0.04) return '<span class="good">▲</span>'; if (ch < -0.04) return '<span class="bad">▼</span>'; return '<span class="muted">●</span>';
+  },
+  riskDots(d) { const n = Math.round(DIS[d].risk / 0.45); return '<span class="dots">' + '🔴'.repeat(Math.min(4, n)) + '</span>'; },
+
+  views: {
+    map() {
+      const sel = UI.sel && DIS[UI.sel] ? UI.sel : S.loc, d = DIS[sel], tr = Game.lvl('transport');
+      let nodes = '';
+      DISTRICTS.forEach(x => {
+        const idx = Math.round(Market.index(x.id) * 100), here = x.id === S.loc;
+        nodes += '<button class="node ' + (here ? 'here ' : '') + (sel === x.id ? 'sel' : '') + '" style="left:' + x.x + '%;top:' + x.y + '%" data-act="selDistrict" data-arg="' + x.id + '" aria-label="' + x.name + '">' +
+          (here ? '<span class="you">' + tr.emoji + '</span>' : '') +
+          '<div class="em">' + x.emoji + '</div><div class="nm">' + x.name + '</div>' +
+          '<div class="meta">ceny ' + idx + '% · ⭐' + Math.floor(S.rep[x.id]) + (S.clients[x.id] ? ' · 🤝' : '') + '</div></button>';
+      });
+      let prices = '';
+      STRAINS.forEach(s => {
+        const p = Market.unitBuy(sel, s.id), fc = UI.canForecast(sel) ? ' ' + UI.arrow(Market.mid(sel, s.id), Market.raw(sel, s.id, S.market.xNext[sel][s.id], Market.shock(sel, s.id, true))) : '';
+        const mine = S.inv[s.id] > 0 && Market.unitSell(sel, s.id) > S.avgCost[s.id] * 1.02 ? ' good' : '';
+        prices += '<div><span>' + s.emoji + ' ' + s.name + '</span><b class="' + mine + '">' + zl(p) + fc + '</b></div>';
+      });
+      const here = sel === S.loc, cost = Game.travelCost();
+      const cl = S.clients[sel];
+      const detail =
+        '<div class="card"><div class="spread"><h2>' + d.emoji + ' ' + d.name + '</h2><span>' + UI.riskDots(sel) + '</span></div>' +
+        '<p class="muted">' + d.desc + '</p>' +
+        '<div class="spread"><small>Reputacja ' + Math.floor(S.rep[sel]) + '/100</small><small>ryzyko ×' + d.risk.toFixed(1) + ' · popyt ×' + d.demand.toFixed(1) + '</small></div>' +
+        '<div class="bar rep"><i style="width:' + S.rep[sel] + '%"></i></div>' +
+        (cl ? '<p class="good" style="margin-top:8px">🤝 ' + d.client.name + ' szuka dziś ' + cl.qty + ' g ' + STR[cl.s].name + ' po ' + zl(cl.unit) + '/g.</p>'
+            : '<p class="muted" style="margin-top:8px"><small>' + (S.rep[sel] < CONFIG.rep.clientAt ? '🔒 Stały klient (' + d.client.name + ') pojawi się przy reputacji ' + CONFIG.rep.clientAt + '.' : 'Stały klient dziś nie dzwonił.') + '</small></p>') +
+        '<div class="pricegrid">' + prices + '</div>' +
+        '<small class="muted">Ceny kupna za gram' + (UI.canForecast(sel) ? ' · strzałka = prognoza informatora na jutro' : '') + '. Zielona = sprzedasz tu z zyskiem.</small>' +
+        '<div style="margin-top:10px">' + (here
+          ? '<button class="btn primary block" data-act="view" data-arg="market">📈 Handluj tutaj</button>'
+          : '<button class="btn primary block" data-act="travel" data-arg="' + sel + '"' + (S.hours < cost ? ' disabled' : '') + '>' + tr.emoji + ' Jedź tutaj (' + cost + ' h)</button>' +
+            (S.hours < cost ? '<small class="warn">Za mało godzin — zakończ dzień.</small>' : '')) +
+        '</div></div>';
+      return '<div class="grid2"><div class="map">' +
+        '<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="river" d="M-5,62 C18,30 34,44 52,34 S82,34 105,24"/><path class="river2" d="M-5,62 C18,30 34,44 52,34 S82,34 105,24"/></svg>' +
+        '<span class="maplabel">O D R A</span>' + nodes + '</div>' + detail + '</div>';
+    },
+
+    market() {
+      const d = S.loc, di = DIS[d], fc = UI.canForecast(d);
+      let rows = '';
+      STRAINS.forEach(s => {
+        const b = Market.unitBuy(d, s.id), sl = Market.unitSell(d, s.id), y = Market.yesterday(d, s.id), mid = Market.mid(d, s.id);
+        const prof = S.inv[s.id] > 0 ? (sl > S.avgCost[s.id] ? 'good' : 'bad') : '';
+        rows += '<tr class="srow ' + (UI.strain === s.id ? 'on' : '') + '" data-act="strain" data-arg="' + s.id + '" tabindex="0">' +
+          '<td><span class="nm">' + s.emoji + ' ' + s.name + '</span></td>' +
+          '<td>' + zl(b) + ' ' + (y ? UI.arrow(y, mid) : '') + '</td>' +
+          '<td class="' + prof + '">' + zl(sl) + '</td>' +
+          '<td>' + (S.inv[s.id] ? num(S.inv[s.id]) + ' g' : '<span class="muted">—</span>') + '</td>' +
+          (fc ? '<td class="hide-m">' + zl(Market.forecast(d, s.id)) + ' ' + UI.arrow(b, Market.forecast(d, s.id)) + '</td>' : '') + '</tr>';
+      });
+      const c = S.clients[d];
+      const client = c ? '<div class="card client"><div class="spread"><div><b>' + di.client.emoji + ' ' + di.client.name + '</b> <small class="muted">stały klient</small><br><small>' + di.client.line + '</small></div>' +
+        '<div style="text-align:right">chce <b>' + c.qty + ' g ' + STR[c.s].name + '</b><br>płaci <b class="good">' + zl(c.unit) + '/g</b></div></div>' +
+        '<button class="btn block" style="margin-top:8px" data-act="sellClient"' + (S.inv[c.s] < 1 ? ' disabled' : '') + '>🤝 Sprzedaj ' + Math.min(S.inv[c.s], c.qty) + ' g za ' + zl(Math.min(S.inv[c.s], c.qty) * c.unit) + '</button></div>' : '';
+      const s = STR[UI.strain];
+      return '<div class="spread" style="margin-bottom:8px"><h2>' + di.emoji + ' Rynek: ' + di.name + '</h2><small class="muted">ryzyko ' + UI.riskDots(d) + ' · reputacja ⭐' + Math.floor(S.rep[d]) + '</small></div>' +
+        client + '<div class="grid2"><div>' +
+        '<div class="card" style="padding:6px 8px"><table class="mkt"><thead><tr><th>Odmiana</th><th>Kup</th><th>Sprzedaj</th><th>Masz</th>' + (fc ? '<th class="hide-m">Jutro</th>' : '') + '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '<div class="card"><div class="spread"><h3>' + s.emoji + ' ' + s.name + ' — historia cen</h3><small><span style="color:' + s.color + '">━</span> ' + di.name + ' <span class="muted">┄ średnia miasta</span></small></div><canvas id="chart" height="190"></canvas>' +
+        (fc ? '<small class="muted">🕵️ Informator: jutro ok. <b>' + zl(Market.forecast(d, s.id)) + '</b>/g (o ile noc nie przyniesie niespodzianek).</small>' : '<small class="muted">Kup informatora, żeby poznać jutrzejsze ceny.</small>') + '</div>' +
+        '</div><div class="card" id="tradeCard">' +
+        '<h3>' + s.emoji + ' ' + s.name + '</h3>' +
+        '<div class="seg"><button class="buy ' + (UI.mode === 'buy' ? 'on' : '') + '" data-act="mode" data-arg="buy">Kup <kbd>B</kbd></button><button class="sell ' + (UI.mode === 'sell' ? 'on' : '') + '" data-act="mode" data-arg="sell">Sprzedaj <kbd>S</kbd></button></div>' +
+        '<div class="qty"><button class="btn small" data-act="qtyStep" data-arg="-10" aria-label="Mniej">−10</button><input type="range" id="qty" min="0" max="0" step="1" value="0" aria-label="Ilość w gramach"><button class="btn small" data-act="qtyStep" data-arg="10" aria-label="Więcej">+10</button></div>' +
+        '<div class="qty2"><input type="number" id="qtyNum" min="0" step="1" inputmode="numeric" aria-label="Ilość w gramach"><button class="btn" data-act="qtyMax">MAX <kbd>M</kbd></button></div>' +
+        '<div class="sum" id="tradeSum"></div>' +
+        '<button class="btn primary block" id="tradeGo" data-act="trade"></button>' +
+        '<small class="muted">Średni koszt twojego zapasu: ' + (S.inv[s.id] ? zl(S.avgCost[s.id]) + '/g' : '—') + '</small>' +
+        '</div></div>';
+    },
+
+    grow() {
+      const lamps = Game.lvl('lamps');
+      let seeds = '';
+      STRAINS.forEach(s => {
+        seeds += '<button class="seed ' + (UI.seed === s.id ? 'on' : '') + '" data-act="seed" data-arg="' + s.id + '"><b>' + s.emoji + ' ' + s.name + '</b><br><small>' + zl(s.seed) + ' · ' + s.days + ' dni · ~' + Math.round(s.yield * lamps.mult) + ' g</small></button>';
+      });
+      let pots = '';
+      S.plants.forEach((p, i) => {
+        if (!p) {
+          pots += '<div class="pot"><div class="big">🕳️</div><small class="muted">Pusta doniczka</small><button class="btn small" data-act="plant" data-arg="' + i + '"' + (S.cash < STR[UI.seed].seed ? ' disabled' : '') + '>Posadź ' + STR[UI.seed].emoji + ' (' + zl(STR[UI.seed].seed) + ')</button></div>';
+        } else if (p.ready) {
+          pots += '<div class="pot ready"><div class="big">🌿</div><b>' + STR[p.s].name + '</b><small class="good">Gotowe: ' + p.grams + ' g</small><button class="btn small primary" data-act="harvest" data-arg="' + i + '">✂️ Zbierz</button></div>';
+        } else {
+          const pct = Math.round((p.total - p.left) / p.total * 100);
+          pots += '<div class="pot grow"><div class="big">' + (pct < 40 ? '🌱' : '🪴') + '</div><b>' + STR[p.s].name + '</b><small class="muted">jeszcze ' + p.left + ' dni · ~' + p.grams + ' g</small><div class="bar"><i style="width:' + pct + '%"></i></div></div>';
+        }
+      });
+      const ready = S.plants.filter(p => p && p.ready).length, empty = S.plants.filter(p => !p).length;
+      return '<div class="spread" style="margin-bottom:8px"><h2>🪴 Hodowla</h2><small class="muted">' + Game.lvl('pots').name + ' · ' + lamps.name + '</small></div>' +
+        '<div class="card"><h3>Wybierz nasiona</h3><div class="seeds">' + seeds + '</div>' +
+        '<div class="row" style="margin-top:10px"><button class="btn" data-act="plantAll"' + (!empty || S.cash < STR[UI.seed].seed ? ' disabled' : '') + '>🌱 Obsadź wolne doniczki</button>' +
+        '<button class="btn primary" data-act="harvestAll"' + (!ready ? ' disabled' : '') + '>✂️ Zbierz wszystko (' + ready + ')</button></div></div>' +
+        '<div class="pots">' + pots + '</div>' +
+        '<p class="muted" style="margin-top:10px"><small>Rośliny rosną nocą. Zbiory trafiają do schowka — potrzebujesz wolnego miejsca. Nalot może zniszczyć część uprawy.</small></p>';
+    },
+
+    upgrades() {
+      let cards = '';
+      Object.keys(UPGRADES).forEach(key => {
+        const u = UPGRADES[key], cur = u.levels[S.up[key]], next = u.levels[S.up[key] + 1];
+        let dots = ''; for (let i = 1; i < u.levels.length; i++) dots += '<i class="' + (i <= S.up[key] ? 'on' : '') + '"></i>';
+        cards += '<div class="card up"><div class="spread"><h3><span class="ic">' + (cur.emoji || u.icon) + '</span> ' + u.name + '</h3><small class="muted">poziom ' + S.up[key] + '/' + (u.levels.length - 1) + '</small></div>' +
+          '<div class="lvls">' + dots + '</div><small class="muted">' + u.desc + '</small>' +
+          '<div>Teraz: <b>' + cur.name + '</b> <small class="muted">(' + cur.info + ')</small></div>' +
+          (next ? '<div>Dalej: <b>' + next.name + '</b> <small class="good">(' + next.info + ')</small></div>' +
+            '<button class="btn ' + (S.cash >= next.cost ? 'primary' : '') + '" data-act="upgrade" data-arg="' + key + '"' + (S.cash < next.cost ? ' disabled' : '') + '>Kup za ' + zl(next.cost) + '</button>'
+            : '<div class="good">✔ Maksymalny poziom</div>') + '</div>';
+      });
+      const bc = Game.bribeCost(), maxLoan = Math.max(Game.canBorrow(), Math.min(S.cash, S.debt));
+      UI.loanAmt = clamp(UI.loanAmt, 0, maxLoan);
+      const shady =
+        '<div class="card up"><div class="spread"><h3><span class="ic">🦈</span> Lichwiarz Zbyszek</h3><small class="muted">' + Math.round(CONFIG.loan.rate * 100) + '% dziennie</small></div>' +
+        '<small class="muted">„U mnie bez BIK-u, bez papierów, bez litości." Limit: ' + zl(Game.creditLimit()) + '. Jeśli dług przekroczy <b class="bad">' + zl(Game.bankruptAt()) + '</b>, Zbyszek przejmuje interes.</small>' +
+        '<div>Dług: <b class="' + (S.debt ? 'bad' : '') + '">' + zl(S.debt) + '</b> · możesz pożyczyć: <b>' + zl(Game.canBorrow()) + '</b></div>' +
+        '<input type="range" id="loan" min="0" max="' + maxLoan + '" step="' + CONFIG.loan.step + '" value="' + UI.loanAmt + '" aria-label="Kwota"' + (maxLoan <= 0 ? ' disabled' : '') + '>' +
+        '<div class="row"><button class="btn" id="loanBorrow" data-act="borrow"></button><button class="btn" id="loanRepay" data-act="repay"></button>' +
+        '<button class="btn small" data-act="repayAll"' + (S.debt <= 0 || S.cash <= 0 ? ' disabled' : '') + '>Spłać ile się da</button></div></div>' +
+        '<div class="card up"><div class="spread"><h3><span class="ic">✉️</span> Koperta dla dzielnicowego</h3><small class="muted">wręczono: ' + S.bribes + '</small></div>' +
+        '<small class="muted">Obniża uwagę policji o ' + CONFIG.bribe.heat + '. Każda kolejna koperta musi być grubsza.</small>' +
+        '<div>Uwaga policji: <b>' + Math.floor(S.heat) + '/100</b></div>' +
+        '<button class="btn" data-act="bribe"' + (S.cash < bc || S.heat < CONFIG.bribe.minHeat ? ' disabled' : '') + '>Wręcz kopertę (' + zl(bc) + ')</button></div>';
+      return '<h2>⬆️ Ulepszenia</h2><div class="ups">' + cards + '</div><h2 style="margin-top:6px">🌚 Szemrane usługi</h2><div class="ups">' + shady + '</div>';
+    },
+
+    log() {
+      let h = '<div class="spread"><h2>📜 Dziennik zdarzeń</h2><small class="muted">majątek netto: ' + zl(Game.netWorth()) + '</small></div><div class="card">';
+      let day = null;
+      for (let i = S.log.length - 1; i >= 0 && i >= S.log.length - 150; i--) {
+        const e = S.log[i];
+        if (e.d !== day) { day = e.d; h += '<div class="logday">DZIEŃ ' + day + '</div>'; }
+        h += '<div class="logrow"><span class="i">' + e.i + '</span><span class="' + e.c + '">' + esc(e.t) + '</span></div>';
+      }
+      return h + '</div>';
+    }
+  },
+
+  /* ---------- panel transakcji ---------- */
+  tradeMax() { return UI.mode === 'buy' ? Market.maxBuy(S.loc, UI.strain) : S.inv[UI.strain]; },
+  updateTrade() {
+    const slider = UI.$('qty'); if (!slider) return;
+    const max = UI.tradeMax(), s = STR[UI.strain], d = S.loc;
+    UI.qty = clamp(Math.floor(UI.qty) || 0, 0, max);
+    slider.max = max; slider.value = UI.qty; slider.disabled = max === 0;
+    const nIn = UI.$('qtyNum'); nIn.max = max; if (document.activeElement !== nIn) nIn.value = UI.qty;
+    const q = UI.qty, go = UI.$('tradeGo'), sum = UI.$('tradeSum');
+    if (UI.mode === 'buy') {
+      const cost = Market.quoteBuy(d, s.id, q), gain = q ? Game.heatGain(d, cost, CONFIG.heat.buyFactor) : 0;
+      sum.innerHTML = q
+        ? 'Koszt: <b>' + zl(cost) + '</b> <small class="muted">(śr. ' + zl(cost / q) + '/g)</small><br><small>Uwaga policji +' + gain.toFixed(1) + ' · wolne miejsce: ' + num(Game.free() - q) + ' g</small>'
+        : (max === 0 ? '<span class="warn">' + (Game.free() === 0 ? 'Schowek jest pełny.' : 'Nie stać cię nawet na gram.') + '</span>' : 'Przesuń suwak, żeby ustawić ilość.<br><small class="muted">Maksymalnie kupisz ' + num(max) + ' g.</small>');
+      go.textContent = q ? '🛒 Kup ' + num(q) + ' g za ' + zl(cost) : '🛒 Kup';
+      go.className = 'btn primary block';
+    } else {
+      const rev = Market.quoteSell(d, s.id, q), gain = q ? Game.heatGain(d, rev, 1) : 0, profit = rev - S.avgCost[s.id] * q;
+      const danger = S.heat + gain >= CONFIG.heat.warnAt;
+      sum.innerHTML = q
+        ? 'Przychód: <b>' + zl(rev) + '</b> <small class="muted">(śr. ' + zl(rev / q) + '/g)</small><br><small>Zysk: <span class="' + (profit >= 0 ? 'good' : 'bad') + '">' + (profit >= 0 ? '+' : '−') + zl(Math.abs(profit)) + '</span> · Uwaga policji <span class="' + (danger ? 'bad' : '') + '">+' + gain.toFixed(1) + '</span></small>'
+        : (max === 0 ? '<span class="warn">Nie masz tej odmiany.</span>' : 'Przesuń suwak, żeby ustawić ilość.<br><small class="muted">Masz ' + num(max) + ' g.</small>');
+      go.textContent = q ? '💸 Sprzedaj ' + num(q) + ' g za ' + zl(rev) : '💸 Sprzedaj';
+      go.className = 'btn block ' + (danger && q ? 'danger' : 'primary');
+    }
+    go.disabled = q < 1;
+  },
+  updateLoan() {
+    const sl = UI.$('loan'); if (!sl) return;
+    const a = Math.floor(Number(sl.value)) || 0; UI.loanAmt = a;
+    const b = UI.$('loanBorrow'), r = UI.$('loanRepay');
+    b.textContent = 'Pożycz ' + zl(a); b.disabled = a < 1 || a > Game.canBorrow();
+    r.textContent = 'Spłać ' + zl(a); r.disabled = a < 1 || a > Math.min(S.cash, S.debt);
+  },
+
+  /* ---------- wykres ---------- */
+  drawChart() {
+    const cv = UI.$('chart'); if (!cv) return;
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+    if (!w || !h) return;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    const s = STR[UI.strain], N = 30;
+    const local = S.hist[s.id][S.loc].slice(-N), n = local.length;
+    const avg = [];
+    for (let i = 0; i < n; i++) { let t = 0; DISTRICTS.forEach(d => { const hh = S.hist[s.id][d.id]; t += hh[hh.length - n + i]; }); avg.push(t / DISTRICTS.length); }
+    const all = local.concat(avg); let lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
+    const pad = Math.max(1, (hi - lo) * 0.15); lo = Math.max(0, lo - pad); hi += pad;
+    const L = 44, R = 10, T = 10, B = 22;
+    const X = i => L + (n > 1 ? i / (n - 1) : 0.5) * (w - L - R), Y = v => T + (1 - (v - lo) / (hi - lo)) * (h - T - B);
+    g.font = '11px system-ui,sans-serif'; g.textBaseline = 'middle';
+    for (let k = 0; k <= 3; k++) {
+      const v = lo + (hi - lo) * k / 3, y = Y(v);
+      g.strokeStyle = 'rgba(57,255,20,.10)'; g.lineWidth = 1; g.beginPath(); g.moveTo(L, y); g.lineTo(w - R, y); g.stroke();
+      g.fillStyle = '#7fa58b'; g.textAlign = 'right'; g.fillText(Math.round(v) + ' zł', L - 6, y);
+    }
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.fillStyle = '#7fa58b';
+    const firstDay = S.day - (n - 1);
+    [0, Math.floor((n - 1) / 2), n - 1].forEach((i, k) => { const dd = firstDay + i; g.textAlign = k === 0 ? 'left' : (k === 2 ? 'right' : 'center'); g.fillText(dd >= 1 ? 'dz. ' + dd : '', X(i), h - 5); });
+    const line = (arr, color, width, dash) => {
+      g.save(); g.strokeStyle = color; g.lineWidth = width; g.setLineDash(dash || []); g.lineJoin = 'round'; g.beginPath();
+      arr.forEach((v, i) => { if (i) g.lineTo(X(i), Y(v)); else g.moveTo(X(i), Y(v)); }); g.stroke(); g.restore();
+    };
+    line(avg, 'rgba(160,200,170,.55)', 1.5, [4, 4]);
+    g.save(); g.shadowColor = s.color; g.shadowBlur = 8; line(local, s.color, 2.5); g.restore();
+    const lx = X(n - 1), ly = Y(local[n - 1]);
+    g.fillStyle = s.color; g.beginPath(); g.arc(lx, ly, 4, 0, Math.PI * 2); g.fill();
+  },
+
+  /* ---------- modale ---------- */
+  currentModal() {
+    if (UI.overlay) return UI.overlay;
+    if (!S) return 'menu';
+    if (S.over) return 'over';
+    if (S.report && !S.report.seen) return 'report';
+    if (S.pending) return 'report';
+    if (S.tutorial < TUTORIAL.length) return 'tutorial';
+    return null;
+  },
+  renderModal() {
+    const m = UI.$('modal'), kind = UI.currentModal();
+    if (!kind) { m.classList.remove('on'); m.innerHTML = ''; UI.modalKind = null; return; }
+    const html = typeof kind === 'string' ? UI.modals[kind]() : kind.html;
+    m.innerHTML = '<div class="dialog">' + html + '</div>';
+    m.classList.add('on');
+    const tag = typeof kind === 'string' ? kind + (kind === 'tutorial' ? S.tutorial : '') : 'custom';
+    if (UI.modalKind !== tag) { UI.modalKind = tag; const p = m.querySelector('[data-primary]') || m.querySelector('button:not(:disabled)'); if (p && !m.querySelector('input[type=text]')) p.focus(); }
+  },
+  rankTable(list, myId) {
+    if (!list.length) return '<p class="muted">Brak wyników. Bądź pierwszy!</p>';
+    let h = '<table class="rank"><tr><th>#</th><th>Ksywa</th><th>Finał</th><th>Wynik</th></tr>';
+    list.forEach((r, i) => { h += '<tr class="' + (r.id === myId ? 'me' : '') + '"><td>' + (i + 1) + '</td><td>' + esc(r.name) + '</td><td>' + (r.win ? '🏆 dz. ' + r.day : '💀 dz. ' + r.day) + '</td><td>' + num(r.score) + '</td></tr>'; });
+    return h + '</table>';
+  },
+  confirm(text, yesLabel, onYes, danger) {
+    UI.overlay = { html: '<h2>Na pewno?</h2><p>' + text + '</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="closeOverlay">Anuluj</button><button class="btn ' + (danger ? 'danger' : 'primary') + '" data-act="confirmYes" data-primary>' + yesLabel + '</button></div>', onYes: onYes };
+    UI.render();
+  },
+  modals: {
+    menu() {
+      const has = Store.has(), inGame = !!S && !S.over;
+      return '<div class="logo">🌿</div><p class="title">ZIELONY WROCŁAW</p><p class="subtitle">od zera do imperium · satyra ekonomiczna</p>' +
+        (inGame ? '<button class="btn primary block" data-act="closeOverlay" data-primary>▶ Wróć do gry</button><div style="height:8px"></div>'
+                : (has ? '<button class="btn primary block" data-act="continue" data-primary>▶ Kontynuuj</button><div style="height:8px"></div>' : '')) +
+        '<div class="card" style="margin:0 0 8px"><label for="pname"><small class="muted">Twoja ksywa</small></label><input type="text" id="pname" maxlength="16" value="' + esc(S ? S.name : 'Ziomek') + '" autocomplete="off">' +
+        '<button class="btn block ' + (has || inGame ? '' : 'primary') + '" style="margin-top:8px" data-act="newGame"' + (has || inGame ? '' : ' data-primary') + '>🌱 Nowa gra</button></div>' +
+        (inGame ? '<button class="btn block" data-act="replayTutorial">❓ Samouczek</button><div style="height:8px"></div>' : '') +
+        '<h3>🏅 Ranking</h3>' + UI.rankTable(Store.scores(), S ? S.id : null) +
+        '<p class="muted" style="margin-top:10px"><small>Gra jest fikcją i satyrą. Postęp zapisuje się automatycznie w tej przeglądarce.</small></p>';
+    },
+    tutorial() {
+      const t = TUTORIAL[S.tutorial], last = S.tutorial === TUTORIAL.length - 1;
+      return '<div class="logo">' + t.i + '</div><h2 style="text-align:center">' + t.t + '</h2><p>' + t.x + '</p>' +
+        '<div class="spread"><small class="muted">' + (S.tutorial + 1) + ' / ' + TUTORIAL.length + '</small><div class="row"><button class="btn small" data-act="tutSkip">Pomiń</button><button class="btn primary" data-act="tutNext" data-primary>' + (last ? 'Do roboty! 🚲' : 'Dalej →') + '</button></div></div>';
+    },
+    report() {
+      const r = S.report || { day: S.day - 1, lines: [], ev: S.pending }, ev = S.pending || r.ev;
+      let h = '<h2>🌙 Noc po dniu ' + r.day + '</h2>';
+      if (r.lines.length) { h += '<div class="lines">'; r.lines.forEach(l => { h += '<div class="logrow"><span class="i">' + l.i + '</span><span class="' + l.c + '">' + esc(l.t) + '</span></div>'; }); h += '</div>'; }
+      else h += '<p class="muted">Cicha noc. Księżyc nad Odrą, spokój w interesie.</p>';
+      if (ev) {
+        h += '<div class="evbox"><div class="evt">' + ev.icon + ' ' + ev.title + '</div><p>' + esc(ev.text) + '</p>';
+        if (S.pending) {
+          h += '<div class="choices">';
+          ev.choices.forEach((c, i) => { h += '<button class="btn choice" data-act="choose" data-arg="' + i + '"' + (c.off ? ' disabled' : '') + '>' + esc(c.label) + ' <kbd>' + (i + 1) + '</kbd><small class="muted">' + esc(c.hint || '') + (c.off ? ' (nie stać cię)' : '') + '</small></button>'; });
+          h += '</div>';
+        } else if (ev.result) h += '<p class="' + (ev.good ? 'good' : 'bad') + '"><b>→ ' + esc(ev.result) + '</b></p>';
+        h += '</div>';
+      }
+      if (!S.pending) {
+        const left = CONFIG.maxDays - S.day + 1;
+        h += '<div class="spread" style="margin-top:12px"><small class="muted">Zostało dni: ' + left + ' · do celu: ' + zl(Math.max(0, CONFIG.goal - S.cash)) + '</small><button class="btn primary" data-act="reportOk" data-primary>☀️ Zaczynamy dzień ' + S.day + '</button></div>';
+      }
+      return h;
+    },
+    over() {
+      const o = S.over, R = REASONS[o.reason], st = S.stats;
+      let h = '<div class="logo">' + R.i + '</div><h1 style="text-align:center" class="' + (o.win ? '' : 'bad') + '">' + R.t + '</h1><p>' + R.x + '</p>';
+      if (S.report && S.report.lines.length && !o.win) { const l = S.report.lines[S.report.lines.length - 1]; h += '<p class="muted"><small>Ostatnia noc: ' + esc(l.t) + '</small></p>'; }
+      h += '<div class="statgrid">' +
+        '<div>Wynik<b class="good">' + num(o.score) + ' pkt</b></div><div>Dzień<b>' + o.day + ' / ' + CONFIG.maxDays + '</b></div>' +
+        '<div>Gotówka<b>' + zl(S.cash) + '</b></div><div>Majątek szczytowy<b>' + zl(st.peakWorth) + '</b></div>' +
+        '<div>Sprzedano<b>' + num(st.soldG) + ' g</b></div><div>Przychód z handlu<b>' + zl(st.revenue) + '</b></div>' +
+        '<div>Zebrano z hodowli<b>' + num(st.harvestedG) + ' g</b></div><div>Najlepsza transakcja<b>' + zl(st.bestDeal) + '</b></div>' +
+        '<div>Dochód pasywny<b>' + zl(st.passive) + '</b></div><div>Odsetki dla Zbyszka<b>' + zl(st.interest) + '</b></div>' +
+        '<div>Naloty / grzywny<b>' + st.raids + ' / ' + zl(st.fines) + '</b></div><div>Stracony towar<b>' + num(st.lostG) + ' g</b></div>' +
+        '<div>Przejazdy<b>' + st.trips + '</b></div><div>Zdarzenia losowe<b>' + st.events + '</b></div></div>' +
+        '<h3>🏅 Ranking</h3>' + UI.rankTable(o.rank || Store.scores(), S.id) +
+        '<button class="btn primary block" style="margin-top:12px" data-act="again" data-primary>🌱 Zagraj jeszcze raz</button>';
+      return h;
+    }
+  },
+
+  /* ---------- akcje ---------- */
+  actions: {
+    view(a) { if (VIEWS.some(v => v.id === a)) { UI.view = a; UI.qty = 0; UI.render(); window.scrollTo(0, 0); } },
+    menu() { UI.overlay = 'menu'; UI.render(); },
+    closeOverlay() { UI.overlay = null; UI.render(); },
+    confirmYes() { const f = UI.overlay && UI.overlay.onYes; UI.overlay = null; if (f) f(); UI.render(); },
+    continue() { const st = Store.load(); if (st) { S = st; UI.overlay = null; UI.view = 'map'; UI.sel = null; UI.lastCash = null; } UI.render(); },
+    newGame() {
+      const inp = UI.$('pname'), name = (inp && inp.value.trim()) || 'Ziomek';
+      const go = () => { Game.start(name); UI.overlay = null; UI.view = 'map'; UI.sel = null; UI.qty = 0; UI.lastCash = null; UI.render(); };
+      if ((S && !S.over) || Store.has()) UI.confirm('Rozpoczęcie nowej gry skasuje obecny zapis.', 'Zaczynam od zera', go, true); else go();
+    },
+    again() { const name = S ? S.name : 'Ziomek'; Game.start(name); S.tutorial = TUTORIAL.length; Store.save(); UI.overlay = null; UI.view = 'map'; UI.sel = null; UI.lastCash = null; UI.render(); },
+    replayTutorial() { S.tutorial = 0; UI.overlay = null; UI.render(); },
+    tutNext() { S.tutorial++; Store.save(); UI.render(); },
+    tutSkip() { S.tutorial = TUTORIAL.length; Store.save(); UI.render(); },
+    selDistrict(a) { UI.sel = a; UI.render(); },
+    travel(a) { const r = UI.result(Game.travel(a)); if (r.ok) { UI.sel = null; UI.qty = 0; } UI.render(); },
+    strain(a) { if (STR[a]) { UI.strain = a; UI.qty = 0; UI.render(); } },
+    mode(a) { UI.mode = a === 'sell' ? 'sell' : 'buy'; UI.qty = 0; UI.render(); },
+    qtyStep(a) { UI.qty = clamp(UI.qty + Number(a), 0, UI.tradeMax()); UI.updateTrade(); },
+    qtyMax() { UI.qty = UI.tradeMax(); UI.updateTrade(); },
+    trade() {
+      const q = UI.qty; if (q < 1) return;
+      const run = () => { const r = UI.mode === 'buy' ? Game.buy(UI.strain, q) : Game.sell(UI.strain, q); if (r.ok) UI.qty = 0; UI.result(r); };
+      const d = S.loc, value = UI.mode === 'buy' ? Market.quoteBuy(d, UI.strain, q) : Market.quoteSell(d, UI.strain, q);
+      const after = S.heat + Game.heatGain(d, value, UI.mode === 'buy' ? CONFIG.heat.buyFactor : 1);
+      if (after >= CONFIG.heat.max) UI.confirm('Ta transakcja podbije uwagę policji do <b class="bad">100</b>. To oznacza <b>areszt i koniec gry</b>.', 'Ryzykuję wszystko', run, true);
+      else if (after >= CONFIG.heat.warnAt) UI.confirm('Po tej transakcji uwaga policji wyniesie <b class="bad">' + Math.floor(after) + '/100</b>. Nalot tej nocy jest bardzo prawdopodobny.', 'Robię to', run, true);
+      else run();
+    },
+    sellClient() { UI.result(Game.sellClient()); },
+    seed(a) { if (STR[a]) { UI.seed = a; UI.render(); } },
+    plant(a) { UI.result(Game.plant(a, UI.seed)); },
+    plantAll() { UI.result(Game.plantAll(UI.seed)); },
+    harvest(a) { UI.result(Game.harvest(a)); },
+    harvestAll() { UI.result(Game.harvestAll()); },
+    upgrade(a) { UI.result(Game.buyUpgrade(a)); },
+    borrow() { const r = UI.result(Game.borrow(UI.loanAmt)); if (r.ok) { UI.loanAmt = 0; UI.render(); } },
+    repay() { const r = UI.result(Game.repay(UI.loanAmt)); if (r.ok) { UI.loanAmt = 0; UI.render(); } },
+    repayAll() { UI.result(Game.repay(Math.min(S.cash, S.debt))); },
+    bribe() { UI.result(Game.bribe()); },
+    endDay() {
+      if (Game.blocked()) return;
+      const run = () => { UI.qty = 0; Game.endDay(); UI.render(); window.scrollTo(0, 0); };
+      const chance = Game.raidChance();
+      const raidInfo = S.up.informant >= 2 ? '<br>🕵️ Informator: ryzyko nalotu tej nocy to <b class="' + (chance > 0.2 ? 'bad' : 'good') + '">' + Math.round(chance * 100) + '%</b>.' : (chance > 0 ? '<br><span class="warn">🚨 Na mieście gorąco — tej nocy możliwy nalot.</span>' : '');
+      if (S.hours >= Game.travelCost() || chance > 0) UI.confirm('Zostało ci ' + S.hours + ' h.' + raidInfo + '<br>Idziesz spać?', '🌙 Dobranoc', run, false);
+      else run();
+    },
+    choose(a) { const r = Events.choose(a); if (!r.ok) UI.toast(r.msg, 'bad'); UI.render(); },
+    reportOk() { if (S.report) S.report.seen = true; Store.save(); UI.render(); }
+  },
+
+  onClick(e) {
+    const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
+    const fn = UI.actions[el.dataset.act]; if (fn) fn(el.dataset.arg);
+  },
+  onInput(e) {
+    const t = e.target;
+    if (t.id === 'qty') { UI.qty = Number(t.value) || 0; UI.updateTrade(); }
+    else if (t.id === 'qtyNum') { UI.qty = clamp(Math.floor(Number(t.value)) || 0, 0, UI.tradeMax()); UI.updateTrade(); }
+    else if (t.id === 'loan') UI.updateLoan();
+  },
+  onKey(e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const tag = e.target.tagName, typing = tag === 'INPUT' && (e.target.type === 'text' || e.target.type === 'number');
+    const modal = UI.currentModal();
+    if (modal) {
+      if (e.key === 'Escape' && UI.overlay && S && !S.over) { UI.actions.closeOverlay(); e.preventDefault(); return; }
+      if (e.key === 'Enter' && tag !== 'BUTTON') { const p = UI.$('modal').querySelector('[data-primary]'); if (p && !p.disabled) { p.click(); e.preventDefault(); } return; }
+      if (modal === 'report' && S.pending && /^[1-3]$/.test(e.key)) { const b = UI.$('modal').querySelector('[data-act="choose"][data-arg="' + (Number(e.key) - 1) + '"]'); if (b && !b.disabled) b.click(); }
+      return;
+    }
+    if (!S) return;
+    if (e.key === 'Escape') { UI.actions.menu(); return; }
+    if (e.key === 'Enter' && (tag === 'TR')) { e.target.click(); return; }
+    if (typing) { if (e.key === 'Enter' && UI.view === 'market') UI.actions.trade(); return; }
+    const k = e.key.toLowerCase();
+    if (/^[1-5]$/.test(k)) { UI.actions.view(VIEWS[Number(k) - 1].id); return; }
+    if (k === 'n') { UI.actions.endDay(); return; }
+    if (UI.view === 'market') {
+      if (k === 'b') UI.actions.mode('buy');
+      else if (k === 's') UI.actions.mode('sell');
+      else if (k === 'm') UI.actions.qtyMax();
+      else if (e.key === 'Enter' && tag !== 'BUTTON') UI.actions.trade();
+      else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && e.target.type !== 'range') {
+        const i = STRAINS.findIndex(s => s.id === UI.strain), n = STRAINS.length;
+        UI.actions.strain(STRAINS[(i + (e.key === 'ArrowDown' ? 1 : n - 1)) % n].id); e.preventDefault();
+      }
+    }
+  }
+};
+
+UI.init();
+</script>
+</body>
+</html>
