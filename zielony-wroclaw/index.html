@@ -137,6 +137,28 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--neon);outline-o
 .client{border-color:var(--pink);box-shadow:0 0 12px rgba(255,95,210,.25)}
 canvas{display:block;width:100%;height:190px}
 
+/* świat 3D */
+#world{position:relative;display:none;height:420px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);background:#05080a;
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#world.on{display:block}
+#gl{position:absolute;inset:0;width:100%;height:100%}
+#wlabels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.wlabel{position:absolute;left:0;top:0;white-space:nowrap;font-weight:700;font-size:.78rem;padding:2px 8px;border-radius:10px;
+  background:rgba(4,20,11,.78);border:1px solid var(--neon-dim);color:var(--text)}
+.wlabel.here{border-color:var(--neon);color:var(--neon);box-shadow:var(--glow)}
+.whud{position:absolute;left:10px;top:10px;max-width:calc(100% - 150px);background:rgba(4,20,11,.78);border:1px solid var(--line);border-radius:12px;padding:6px 10px;pointer-events:none}
+#wloc{font-weight:800;font-size:1.05rem;color:var(--neon);text-shadow:var(--glow)}
+#wsub{font-size:.76rem;color:var(--muted)}
+#mini{position:absolute;right:10px;top:10px;width:118px;height:118px;border-radius:12px;border:1px solid var(--neon-dim)}
+#wwarn{position:absolute;left:50%;top:38%;transform:translateX(-50%);background:rgba(58,18,24,.9);border:1px solid var(--red);color:#ffd9dd;
+  border-radius:12px;padding:6px 12px;font-weight:700;white-space:nowrap;animation:pulse 1s infinite;pointer-events:none}
+#joy{position:absolute;left:14px;bottom:14px;width:128px;height:128px;border-radius:50%;background:rgba(57,255,20,.08);border:2px solid rgba(57,255,20,.4);touch-action:none}
+#joy i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(57,255,20,.55);border:2px solid var(--neon);box-shadow:var(--glow);pointer-events:none}
+.wbtns{position:absolute;right:10px;bottom:14px;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.wbtns .btn{background:rgba(16,27,22,.92)}
+.wbtns .btn.primary{background:linear-gradient(180deg,#2ad410,#178a0a);padding:12px 16px}
+#whelp{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);font-size:.72rem;color:var(--muted);background:rgba(4,20,11,.6);padding:2px 8px;border-radius:8px;pointer-events:none;white-space:nowrap}
+
 /* hodowla */
 .pots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .pot{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;min-height:132px;display:flex;flex-direction:column;gap:6px;justify-content:center}
@@ -214,6 +236,9 @@ table.rank{width:100%;border-collapse:collapse;font-size:.88rem}
   .node{width:98px;padding:5px 3px 6px}
   .mkt td,.mkt th{padding:7px 3px;font-size:.84rem}
   .hide-m{display:none}
+  #whelp{display:none}
+  #mini{width:96px;height:96px}
+  .whud{max-width:calc(100% - 124px)}
   #toasts{bottom:78px}
 }
 @media (min-width:761px){.tab kbd{display:inline}.tab .ti{margin-right:4px}}
@@ -224,6 +249,16 @@ table.rank{width:100%;border-collapse:collapse;font-size:.88rem}
 <div id="app">
   <header id="topbar"></header>
   <nav id="nav" aria-label="Widoki gry"></nav>
+  <section id="world" aria-label="Miasto 3D">
+    <canvas id="gl"></canvas>
+    <div id="wlabels"></div>
+    <div class="whud"><div id="wloc"></div><div id="wsub"></div></div>
+    <canvas id="mini" width="236" height="236" aria-hidden="true"></canvas>
+    <div id="wwarn" style="display:none">🚓 Patrol patrzy ci na plecak — odjedź!</div>
+    <div id="joy" aria-label="Joystick"><i></i></div>
+    <div class="wbtns"><button class="btn small" data-act="toggleMap">🗺️ Plan miasta</button><button class="btn primary" id="wact" data-act="worldAct">📈 Handluj</button></div>
+    <div id="whelp">WASD / strzałki — jazda · E — handel</div>
+  </section>
   <main id="view"></main>
 </div>
 <div id="modal" role="dialog" aria-modal="true"></div>
@@ -273,6 +308,10 @@ const CONFIG = {
   loan: { rate: 0.06, baseLimit: 3000, worthFactor: 0.5, maxLimit: 150000, bankruptFactor: 2, step: 100 },
   rep: { max: 100, perDepth: 3, capPerSale: 3, priceBonus: 0.0012, depthBonus: 0.015, clientAt: 40, vipAt: 75, clientPremium: 1.35, clientQty: 0.45, vipQty: 0.9 },
   events: { chance: 0.9 },
+  world: { scale: 7, zoneRadius: 75, cell: 24, half: 348, riverHalf: 13, bridgeEvery: 72, waterSlow: 0.35,
+           speeds: [26, 36, 46], accel: 50, turn: 2.3,
+           patrols: 4, patrolSpeed: 13, patrolRange: 24, patrolHeat: 1.5, patrolHeatCap: 60,
+           pickups: 5, pickupMin: 40, pickupMax: 140, pickupDayBonus: 0.08 },
   score: { winBase: 1000000, perDayLeft: 25000 }
 };
 
@@ -404,12 +443,12 @@ function newState(name) {
     loc: CONFIG.startDistrict,
     inv: {}, avgCost: {},
     up: { stash: 0, transport: 0, lawyer: 0, informant: 0, workers: 0, pots: 0, lamps: 0 },
-    bribes: 0, plants: [], rep: {}, traded: {}, clients: {},
+    bribes: 0, plants: [], rep: {}, traded: {}, clients: {}, pickups: [],
     market: null, hist: {},
     log: [], report: null, pending: null, over: null,
     nextHoursMod: 0, lastEvent: null, tutorial: 0,
     stats: { soldG: 0, revenue: 0, boughtG: 0, spent: 0, fines: 0, raids: 0, lostG: 0, events: 0, bestDeal: 0,
-             harvestedG: 0, trips: 0, interest: 0, passive: 0, peakWorth: CONFIG.startCash, upgrades: 0 }
+             harvestedG: 0, trips: 0, interest: 0, passive: 0, found: 0, peakWorth: CONFIG.startCash, upgrades: 0 }
   };
   STRAINS.forEach(s => { st.inv[s.id] = 0; st.avgCost[s.id] = 0; });
   DISTRICTS.forEach(d => { st.rep[d.id] = 0; });
@@ -541,6 +580,7 @@ const Game = {
   start(name) {
     S = newState(name);
     Market.init();
+    Game.genClients();
     Game.log('🌱', 'Zaczynasz na Psim Polu z ' + zl(CONFIG.startCash) + ' i plecakiem. Cel: ' + zl(CONFIG.goal) + ' w ' + CONFIG.maxDays + ' dni.', 'good');
     Store.save();
   },
@@ -700,7 +740,30 @@ const Game = {
     return ok('Dzielnicowy nagle patrzy w inną stronę.');
   },
 
+  /* koperty rozrzucone po mieście 3D i uwaga patroli */
+  spawnPickups() {
+    const W = CONFIG.world, n = Math.floor(W.half / W.cell) - 1; S.pickups = [];
+    for (let i = 0; i < W.pickups; i++) {
+      const x = rint(-n, n) * W.cell, z = rint(-n, n) * W.cell + rint(4, W.cell - 4);
+      S.pickups.push({ x: x, z: z, v: Math.round(rnd(W.pickupMin, W.pickupMax) * (1 + S.day * W.pickupDayBonus)) });
+    }
+  },
+  collect(i) {
+    if (Game.blocked()) return fail('Najpierw dokończ bieżące zdarzenie.');
+    i = Number(i); const q = S.pickups && S.pickups[i];
+    if (!q) return fail('Tu nic nie leży.');
+    S.pickups.splice(i, 1); S.cash += q.v; S.stats.found = (S.stats.found || 0) + q.v;
+    Game.log('✉️', 'Znaleziona koperta: +' + zl(q.v) + '.', 'good');
+    Game.touchWorth(); Game.check(); Store.save();
+    return ok('✉️ Koperta na chodniku: +' + zl(q.v) + '.');
+  },
+  patrolHeat(dt) {
+    if (Game.blocked() || !(dt > 0) || S.heat >= CONFIG.world.patrolHeatCap) return;
+    S.heat = Math.min(CONFIG.world.patrolHeatCap, S.heat + CONFIG.world.patrolHeat * Math.min(dt, 0.1));
+  },
+
   genClients() {
+    Game.spawnPickups();
     S.clients = {};
     DISTRICTS.forEach(d => {
       const r = S.rep[d.id];
@@ -1040,14 +1103,14 @@ const Events = {
    ===================================================================== */
 const TUTORIAL = [
   { i:'🌿', t:'Witaj we Wrocławiu!', x:'Masz 500 zł, szkolny plecak i plan: zebrać <b>1 000 000 zł w 60 dni</b> i otworzyć legalną sieć dispensary. Proste? No właśnie.' },
-  { i:'🗺️', t:'Mapa miasta', x:'Sześć dzielnic, każda z innymi cenami i ryzykiem. Na obrzeżach (Psie Pole, Fabryczna) jest tanio, w centrum drogo. Przejazd kosztuje godziny — dzień ma ich 12.' },
+  { i:'🌆', t:'Otwarte miasto', x:'Jeździsz po trójwymiarowym Wrocławiu: <b>joystick</b> na telefonie, <b>WASD</b> lub strzałki na komputerze. Sześć dzielnic to zielone kręgi ze świetlnym słupem. Na obrzeżach jest tanio, w centrum drogo. Wjazd do nowej dzielnicy kosztuje godziny — dzień ma ich 12. Zbieraj żółte koperty i omijaj patrole, gdy wieziesz towar.' },
   { i:'📈', t:'Rynek', x:'Kupuj tanio, sprzedawaj drogo. Suwak ustawia ilość, przycisk MAX bierze wszystko. Uwaga: duże transakcje ruszają cenę — zalany rynek płaci mniej.' },
   { i:'🪴', t:'Hodowla', x:'Nasiono + kilka dni cierpliwości = darmowy towar. Zacznij od dwóch doniczek na parapecie, z czasem dokup growbox i lampy.' },
   { i:'🚨', t:'Uwaga policji', x:'Rośnie przy handlu, najszybciej w bogatych dzielnicach. Od 50 grożą nocne naloty, przy <b>100 lądujesz w areszcie</b>. Spada sama o kilka punktów dziennie, resztę załatwia koperta.' },
   { i:'⬆️', t:'Inwestuj i kombinuj', x:'Ulepszenia, pracownicy, reputacja w dzielnicach i lichwiarz Zbyszek (6% dziennie!). Każdy wskaźnik na górze ma podpowiedź. Klawisze: <b>1–5</b> widoki, <b>N</b> koniec dnia. Powodzenia!' }
 ];
 const VIEWS = [
-  { id:'map', name:'Mapa', icon:'🗺️' }, { id:'market', name:'Rynek', icon:'📈' }, { id:'grow', name:'Hodowla', icon:'🪴' },
+  { id:'map', name:'Miasto', icon:'🌆' }, { id:'market', name:'Rynek', icon:'📈' }, { id:'grow', name:'Hodowla', icon:'🪴' },
   { id:'upgrades', name:'Ulepszenia', icon:'⬆️' }, { id:'log', name:'Dziennik', icon:'📜' }
 ];
 const REASONS = {
@@ -1059,7 +1122,7 @@ const REASONS = {
 };
 
 const UI = {
-  view: 'map', strain: 'lemon', mode: 'buy', qty: 0, sel: null, seed: 'lemon', overlay: null, lastCash: null, loanAmt: 0,
+  view: 'map', map3d: true, strain: 'lemon', mode: 'buy', qty: 0, sel: null, seed: 'lemon', overlay: null, lastCash: null, loanAmt: 0,
   $: id => document.getElementById(id),
 
   init() {
@@ -1067,6 +1130,7 @@ const UI = {
     document.body.addEventListener('input', UI.onInput);
     document.addEventListener('keydown', UI.onKey);
     window.addEventListener('resize', () => { if (S && UI.view === 'market') UI.drawChart(); });
+    World.init();
     UI.overlay = 'menu';
     UI.render();
   },
@@ -1084,7 +1148,9 @@ const UI = {
     const app = UI.$('app');
     if (S) { app.classList.add('on'); UI.renderTop(); UI.renderNav(); UI.renderView(); } else app.classList.remove('on');
     UI.renderModal();
+    World.sync();
   },
+  inTransit() { return World.ok && UI.map3d && !!S && World.zone !== S.loc; },
 
   renderTop() {
     const heat = Math.floor(S.heat), cap = Game.capacity(), load = Game.load();
@@ -1122,6 +1188,7 @@ const UI = {
   renderView() {
     const el = UI.$('view');
     const key = UI.view + '|' + S.day;
+    if (World.ok && UI.view === 'map' && UI.map3d) { el.innerHTML = ''; UI.lastViewKey = key; return; }
     el.innerHTML = UI.views[UI.view]();
     if (UI.lastViewKey !== key) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; UI.lastViewKey = key; }
     if (UI.view === 'market') { UI.updateTrade(); UI.drawChart(); }
@@ -1168,12 +1235,13 @@ const UI = {
           : '<button class="btn primary block" data-act="travel" data-arg="' + sel + '"' + (S.hours < cost ? ' disabled' : '') + '>' + tr.emoji + ' Jedź tutaj (' + cost + ' h)</button>' +
             (S.hours < cost ? '<small class="warn">Za mało godzin — zakończ dzień.</small>' : '')) +
         '</div></div>';
-      return '<div class="grid2"><div class="map">' +
+      return (World.ok ? '<div class="spread" style="margin-bottom:8px"><h2>🗺️ Plan miasta</h2><button class="btn" data-act="toggleMap">🌆 Wróć do miasta 3D</button></div>' : '') + '<div class="grid2"><div class="map">' +
         '<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="river" d="M-5,62 C18,30 34,44 52,34 S82,34 105,24"/><path class="river2" d="M-5,62 C18,30 34,44 52,34 S82,34 105,24"/></svg>' +
         '<span class="maplabel">O D R A</span>' + nodes + '</div>' + detail + '</div>';
     },
 
     market() {
+      if (UI.inTransit()) return '<div class="card"><h2>🛣️ Jesteś w trasie</h2><p>Handlować można tylko w dzielnicy. Dojedź do zielonego kręgu ze świetlnym słupem — ostatnio byłeś tu: <b>' + DIS[S.loc].name + '</b>.</p><button class="btn primary" data-act="view" data-arg="map">🌆 Wróć do miasta</button></div>';
       const d = S.loc, di = DIS[d], fc = UI.canForecast(d);
       let rows = '';
       STRAINS.forEach(s => {
@@ -1419,6 +1487,7 @@ const UI = {
         '<div>Zebrano z hodowli<b>' + num(st.harvestedG) + ' g</b></div><div>Najlepsza transakcja<b>' + zl(st.bestDeal) + '</b></div>' +
         '<div>Dochód pasywny<b>' + zl(st.passive) + '</b></div><div>Odsetki dla Zbyszka<b>' + zl(st.interest) + '</b></div>' +
         '<div>Naloty / grzywny<b>' + st.raids + ' / ' + zl(st.fines) + '</b></div><div>Stracony towar<b>' + num(st.lostG) + ' g</b></div>' +
+        '<div>Znalezione koperty<b>' + zl(st.found || 0) + '</b></div><div>Ulepszenia<b>' + st.upgrades + '</b></div>' +
         '<div>Przejazdy<b>' + st.trips + '</b></div><div>Zdarzenia losowe<b>' + st.events + '</b></div></div>' +
         '<h3>🏅 Ranking</h3>' + UI.rankTable(o.rank || Store.scores(), S.id) +
         '<button class="btn primary block" style="margin-top:12px" data-act="again" data-primary>🌱 Zagraj jeszcze raz</button>';
@@ -1432,7 +1501,9 @@ const UI = {
     menu() { UI.overlay = 'menu'; UI.render(); },
     closeOverlay() { UI.overlay = null; UI.render(); },
     confirmYes() { const f = UI.overlay && UI.overlay.onYes; UI.overlay = null; if (f) f(); UI.render(); },
-    continue() { const st = Store.load(); if (st) { S = st; UI.overlay = null; UI.view = 'map'; UI.sel = null; UI.lastCash = null; } UI.render(); },
+    toggleMap() { UI.map3d = !UI.map3d; UI.sel = null; UI.render(); },
+    worldAct() { if (S && !UI.inTransit()) UI.actions.view('market'); },
+    continue() { const st = Store.load(); if (st) { S = st; if (!S.pickups) S.pickups = []; UI.overlay = null; UI.view = 'map'; UI.sel = null; UI.lastCash = null; } UI.render(); },
     newGame() {
       const inp = UI.$('pname'), name = (inp && inp.value.trim()) || 'Ziomek';
       const go = () => { Game.start(name); UI.overlay = null; UI.view = 'map'; UI.sel = null; UI.qty = 0; UI.lastCash = null; UI.render(); };
@@ -1443,13 +1514,13 @@ const UI = {
     tutNext() { S.tutorial++; Store.save(); UI.render(); },
     tutSkip() { S.tutorial = TUTORIAL.length; Store.save(); UI.render(); },
     selDistrict(a) { UI.sel = a; UI.render(); },
-    travel(a) { const r = UI.result(Game.travel(a)); if (r.ok) { UI.sel = null; UI.qty = 0; } UI.render(); },
+    travel(a) { const r = UI.result(Game.travel(a)); if (r.ok) { UI.sel = null; UI.qty = 0; if (World.ok) World.place(); } UI.render(); },
     strain(a) { if (STR[a]) { UI.strain = a; UI.qty = 0; UI.render(); } },
     mode(a) { UI.mode = a === 'sell' ? 'sell' : 'buy'; UI.qty = 0; UI.render(); },
     qtyStep(a) { UI.qty = clamp(UI.qty + Number(a), 0, UI.tradeMax()); UI.updateTrade(); },
     qtyMax() { UI.qty = UI.tradeMax(); UI.updateTrade(); },
     trade() {
-      const q = UI.qty; if (q < 1) return;
+      const q = UI.qty; if (q < 1 || UI.inTransit()) return;
       const run = () => { const r = UI.mode === 'buy' ? Game.buy(UI.strain, q) : Game.sell(UI.strain, q); if (r.ok) UI.qty = 0; UI.result(r); };
       const d = S.loc, value = UI.mode === 'buy' ? Market.quoteBuy(d, UI.strain, q) : Market.quoteSell(d, UI.strain, q);
       const after = S.heat + Game.heatGain(d, value, UI.mode === 'buy' ? CONFIG.heat.buyFactor : 1);
@@ -1457,7 +1528,7 @@ const UI = {
       else if (after >= CONFIG.heat.warnAt) UI.confirm('Po tej transakcji uwaga policji wyniesie <b class="bad">' + Math.floor(after) + '/100</b>. Nalot tej nocy jest bardzo prawdopodobny.', 'Robię to', run, true);
       else run();
     },
-    sellClient() { UI.result(Game.sellClient()); },
+    sellClient() { if (!UI.inTransit()) UI.result(Game.sellClient()); },
     seed(a) { if (STR[a]) { UI.seed = a; UI.render(); } },
     plant(a) { UI.result(Game.plant(a, UI.seed)); },
     plantAll() { UI.result(Game.plantAll(UI.seed)); },
@@ -1502,6 +1573,7 @@ const UI = {
     }
     if (!S) return;
     if (e.key === 'Escape') { UI.actions.menu(); return; }
+    if (World.on && !typing && World.keyDown(e)) return;
     if (e.key === 'Enter' && (tag === 'TR')) { e.target.click(); return; }
     if (typing) { if (e.key === 'Enter' && UI.view === 'market') UI.actions.trade(); return; }
     const k = e.key.toLowerCase();
@@ -1517,6 +1589,319 @@ const UI = {
         UI.actions.strain(STRAINS[(i + (e.key === 'ArrowDown' ? 1 : n - 1)) % n].id); e.preventDefault();
       }
     }
+  }
+};
+
+/* =====================================================================
+   9. ŚWIAT 3D — otwarte miasto w czystym WebGL (bez bibliotek)
+   ===================================================================== */
+function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const M4 = {
+  persp(fovy, asp, n, f) { const t = 1 / Math.tan(fovy / 2), o = new Float32Array(16); o[0] = t / asp; o[5] = t; o[10] = (f + n) / (n - f); o[11] = -1; o[14] = 2 * f * n / (n - f); return o; },
+  look(ex, ey, ez, tx, ty, tz) {
+    let fx = tx - ex, fy = ty - ey, fz = tz - ez, l = Math.hypot(fx, fy, fz); fx /= l; fy /= l; fz /= l;
+    let sx = -fz, sz = fx; l = Math.hypot(sx, sz) || 1; sx /= l; sz /= l;
+    const ux = -sz * fy, uy = sz * fx - sx * fz, uz = sx * fy;
+    const o = new Float32Array(16);
+    o[0] = sx; o[4] = 0; o[8] = sz; o[12] = -(sx * ex + sz * ez);
+    o[1] = ux; o[5] = uy; o[9] = uz; o[13] = -(ux * ex + uy * ey + uz * ez);
+    o[2] = -fx; o[6] = -fy; o[10] = -fz; o[14] = fx * ex + fy * ey + fz * ez;
+    o[15] = 1; return o;
+  },
+  mul(a, b) { const o = new Float32Array(16); for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3]; return o; }
+};
+const STYLE = {
+  stare:     { cols: [[.93,.72,.45],[.85,.5,.42],[.6,.75,.6],[.9,.85,.6],[.55,.65,.8],[.8,.55,.65]], h: [11, 19], w: [12, 15], roof: [.45,.2,.15], pad: [.24,.23,.22], trees: 0 },
+  nadodrze:  { cols: [[.6,.3,.25],[.5,.28,.22],[.7,.45,.3],[.3,.5,.55],[.75,.35,.55]], h: [10, 16], w: [12, 15], roof: [.2,.2,.22], pad: [.2,.21,.23], trees: 0 },
+  krzyki:    { cols: [[.92,.9,.84],[.85,.82,.75],[.8,.85,.8]], h: [5, 8], w: [8, 11], roof: [.3,.15,.12], pad: [.13,.32,.15], trees: 1 },
+  biskupin:  { cols: [[.6,.62,.65],[.7,.7,.68],[.55,.6,.68]], h: [14, 28], w: [11, 14], roof: [.25,.25,.28], pad: [.2,.21,.23], trees: 0 },
+  fabryczna: { cols: [[.45,.47,.5],[.5,.42,.35],[.38,.42,.48]], h: [6, 10], w: [14, 16], roof: [.2,.2,.2], pad: [.17,.17,.18], trees: 0, chimney: .25 },
+  psie:      { cols: [[.8,.7,.55],[.7,.6,.5],[.85,.8,.7]], h: [4, 6], w: [7, 10], roof: [.35,.18,.14], pad: [.12,.3,.14], trees: 2 }
+};
+const NEON = [.22, 1, .08];
+
+const World = {
+  ok: false, on: false, raf: 0, gl: null, sid: null, zone: null, last: 0, frameNo: 0,
+  p: { x: 0, z: 0, a: 0, v: 0 }, camA: 0, keys: {}, joy: { x: 0, y: 0 }, patrols: [], solid: {}, extra: [], labels: {}, hudKey: '', warnAt: 0, watched: false, vp: null,
+
+  center(d) { return { x: (d.x - 50) * CONFIG.world.scale, z: (d.y - 50) * CONFIG.world.scale }; },
+  riverZ(x) { return -85 - 0.18 * x + 25 * Math.sin(x / 90); },
+  inRiver(x, z) { return Math.abs(z - World.riverZ(x)) < CONFIG.world.riverHalf; },
+  onBridge(x) { const e = CONFIG.world.bridgeEvery, m = ((x % e) + e) % e; return m < 5 || m > e - 5; },
+  wet(x, z) { return World.inRiver(x, z) && !World.onBridge(x); },
+
+  box(o, cx, cy, cz, sx, sy, sz, rot, col, kind, top) {
+    const c = Math.cos(rot || 0), s = Math.sin(rot || 0), hx = sx / 2, hy = sy / 2, hz = sz / 2, k = kind || 0, t = top || col;
+    const P = (lx, ly, lz) => [cx + lx * c + lz * s, cy + ly, cz - lx * s + lz * c];
+    const N = (nx, nz) => [nx * c + nz * s, 0, -nx * s + nz * c];
+    const quad = (a, b, d, e, n, cl) => { const q = [a, b, d, a, d, e]; for (let i = 0; i < 6; i++) { const p = q[i]; o.push(p[0], p[1], p[2], n[0], n[1], n[2], cl[0], cl[1], cl[2], k); } };
+    const A = P(-hx, -hy, -hz), B = P(hx, -hy, -hz), C = P(hx, -hy, hz), D = P(-hx, -hy, hz), E = P(-hx, hy, -hz), F = P(hx, hy, -hz), G = P(hx, hy, hz), H = P(-hx, hy, hz);
+    quad(E, F, G, H, [0, 1, 0], t);
+    quad(A, B, F, E, N(0, -1), col); quad(B, C, G, F, N(1, 0), col); quad(C, D, H, G, N(0, 1), col); quad(D, A, E, H, N(-1, 0), col);
+  },
+  tree(o, x, z, s) { World.box(o, x, .2 + 1.2 * s, z, .6 * s, 2.4 * s, .6 * s, 0, [.3, .2, .12]); World.box(o, x, .2 + 3.6 * s, z, 2.8 * s, 3 * s, 2.8 * s, .5, [.13, .42, .16], 0, [.18, .52, .2]); },
+
+  build() {
+    const o = [], W = CONFIG.world, C = W.cell, rng = mulberry(1241), R = W.zoneRadius, n = Math.floor(W.half / C);
+    const rr = (a, b) => a + rng() * (b - a);
+    World.box(o, 0, -0.5, 0, 3000, 1, 3000, 0, [.09, .1, .11]);
+    for (let x = -W.half - 300; x < W.half + 300; x += 12) World.box(o, x + 6, .03, World.riverZ(x + 6), 12.6, .12, W.riverHalf * 2, 0, [.1, .34, .55], 3);
+    for (let bx = -Math.floor(W.half / W.bridgeEvery) * W.bridgeEvery; bx <= W.half; bx += W.bridgeEvery) {
+      const bz = World.riverZ(bx), len = W.riverHalf * 2 + 10;
+      World.box(o, bx, .35, bz, 9, .7, len, 0, [.3, .31, .34]);
+      World.box(o, bx - 4.6, 1.2, bz, .3, 1, len, 0, NEON, 2); World.box(o, bx + 4.6, 1.2, bz, .3, 1, len, 0, NEON, 2);
+    }
+    const centers = DISTRICTS.map(d => ({ id: d.id, c: World.center(d) }));
+    for (let i = -n; i < n; i++) for (let j = -n; j < n; j++) {
+      const cx = (i + .5) * C, cz = (j + .5) * C;
+      if (Math.abs(cz - World.riverZ(cx)) < W.riverHalf + C * .75) continue;
+      let best = null, bd = 1e9;
+      centers.forEach(q => { const dd = Math.hypot(cx - q.c.x, cz - q.c.z); if (dd < bd) { bd = dd; best = q.id; } });
+      if (bd < 20) continue;
+      let st = STYLE[best], inside = bd < R;
+      if (!inside) {
+        const r = rng();
+        if (r < .3) { World.box(o, cx, .1, cz, 17, .2, 17, 0, [.12, .28, .14]); World.tree(o, cx + rr(-5, 5), cz + rr(-5, 5), rr(.9, 1.5)); World.tree(o, cx + rr(-5, 5), cz + rr(-5, 5), rr(.9, 1.5)); continue; }
+        if (r < .5) continue;
+        st = { cols: [[.33, .35, .38], [.4, .38, .36], [.3, .33, .37]], h: [5, 11], w: [10, 14], roof: [.18, .18, .2], pad: [.17, .18, .2], trees: 0 };
+      }
+      World.box(o, cx, .1, cz, 17, .2, 17, 0, st.pad);
+      const w = rr(st.w[0], st.w[1]), dpt = rr(st.w[0], st.w[1]), h = rr(st.h[0], st.h[1]), col = st.cols[Math.floor(rng() * st.cols.length)];
+      const ox = st.trees ? rr(-2, 2) : 0, oz = st.trees ? rr(-2, 2) : 0;
+      World.box(o, cx + ox, .2 + h / 2, cz + oz, w, h, dpt, 0, col, 1, st.roof);
+      World.solid[i + ',' + j] = [cx + ox - w / 2, cx + ox + w / 2, cz + oz - dpt / 2, cz + oz + dpt / 2];
+      for (let t = 0; t < st.trees; t++) World.tree(o, cx + (t ? -7 : 7), cz + rr(-6, 6), rr(.8, 1.2));
+      if (st.chimney && rng() < st.chimney) { World.box(o, cx + w / 2 - 2, h + 10, cz + oz, 1.8, 20, 1.8, 0, [.55, .3, .25]); World.box(o, cx + w / 2 - 2, h + 19, cz + oz, 1.9, 2, 1.9, 0, [.9, .9, .9]); }
+    }
+    centers.forEach(q => {
+      const x = q.c.x, z = q.c.z;
+      for (let k = 0; k < 60; k++) { const a = k / 60 * Math.PI * 2; World.box(o, x + Math.sin(a) * R, .45, z + Math.cos(a) * R, R * Math.PI * 2 / 60 * .6, .3, 1, a, NEON, 2); }
+      World.box(o, x, .15, z, 26, .3, 26, 0, [.26, .25, .24]);
+      World.box(o, x, 30, z, .7, 60, .7, 0, NEON, 2);
+      World.box(o, x + 4, .75, z + 4, .7, .9, .7, 0, [.25, .4, .8]); World.box(o, x + 4, 1.5, z + 4, .5, .7, .5, .6, [.9, .12, .1]);
+      const solid = (sx, sz, w, d) => World.extra.push([x + sx - w / 2, x + sx + w / 2, z + sz - d / 2, z + sz + d / 2]);
+      if (q.id === 'stare') { World.box(o, x - 7, 13, z - 7, 4.5, 26, 4.5, 0, [.8, .62, .4], 1); World.box(o, x - 7, 30, z - 7, 2, 8, 2, .78, [.25, .6, .5]); World.box(o, x - 2, 5, z - 8, 8, 10, 6, 0, [.85, .55, .4], 1, [.45, .2, .15]); solid(-5, -7.5, 11, 7); }
+      else if (q.id === 'nadodrze') { [[.95, .3, .6], [.2, .8, .9], [1, .8, .2]].forEach((cl, k) => World.box(o, x - 7, 1.7 + k * 3, z - 6, 11, 3, 1.2, .4, cl)); solid(-7, -6, 10, 5); }
+      else if (q.id === 'krzyki') { World.box(o, x - 7, 10, z - 7, 4, 20, 4, 0, [.6, .32, .25]); World.box(o, x - 7, 22, z - 7, 6.5, 5, 6.5, 0, [.65, .36, .28], 0, [.3, .15, .12]); solid(-7, -7, 4, 4); }
+      else if (q.id === 'biskupin') { World.box(o, x - 6, 2.2, z - 6, 11, 4, 11, 0, [.72, .72, .7]); World.box(o, x - 6, 5.7, z - 6, 8, 3, 8, .78, [.76, .76, .74]); World.box(o, x - 6, 8.4, z - 6, 5, 2.5, 5, 0, [.8, .8, .78]); World.box(o, x - 6, 10.4, z - 6, 2, 1.5, 2, .78, [.5, .7, .6]); solid(-6, -6, 11, 11); }
+      else if (q.id === 'fabryczna') { [-9, -4].forEach(dx => { World.box(o, x + dx, 15, z - 8, 2, 30, 2, 0, [.5, .28, .22]); World.box(o, x + dx, 28.5, z - 8, 2.1, 3, 2.1, 0, [.92, .92, .92]); solid(dx, -8, 2, 2); }); }
+      else { World.box(o, x - 7, 2, z - 7, 5, 3.5, 4, 0, [.5, .35, .22], 0, [.3, .18, .12]); solid(-7, -7, 5, 4); World.tree(o, x - 9, z + 5, 1.3); World.tree(o, x + 8, z - 8, 1.1); World.tree(o, x - 2, z - 10, 1); }
+    });
+    return new Float32Array(o);
+  },
+
+  init() {
+    const cv = UI.$('gl'); let gl = null;
+    try { gl = cv.getContext('webgl', { antialias: true, alpha: false }) || cv.getContext('experimental-webgl'); } catch (e) { gl = null; }
+    if (!gl) return;
+    const vs = 'attribute vec3 a_pos;attribute vec3 a_n;attribute vec3 a_col;attribute float a_kind;uniform mat4 u_vp;varying vec3 v_col;varying vec3 v_n;varying vec3 v_w;varying float v_kind;varying float v_fog;' +
+      'void main(){gl_Position=u_vp*vec4(a_pos,1.0);v_col=a_col;v_n=a_n;v_w=a_pos;v_kind=a_kind;v_fog=clamp((gl_Position.w-140.0)/460.0,0.0,1.0);}';
+    const fs = 'precision mediump float;varying vec3 v_col;varying vec3 v_n;varying vec3 v_w;varying float v_kind;varying float v_fog;uniform vec3 u_fog;uniform float u_night;uniform float u_time;' +
+      'void main(){vec3 n=normalize(v_n);float dl=0.5+0.5*max(dot(n,normalize(vec3(0.45,0.8,0.35))),0.0);vec3 c=v_col*dl*mix(1.0,0.42,u_night);float fg=v_fog;' +
+      'if(v_kind>0.5&&v_kind<1.5){if(abs(n.y)<0.5){float u=abs(n.x)>0.5?v_w.z:v_w.x;vec2 g=vec2(u/2.3,v_w.y/2.7);vec2 f=fract(g);float win=step(0.22,f.x)*step(f.x,0.78)*step(0.3,f.y)*step(f.y,0.8);' +
+      'float h=fract(sin(dot(floor(g),vec2(12.9898,78.233)))*43758.5453);float lit=step(1.0-0.65*u_night,h);c=mix(c,mix(vec3(0.10,0.16,0.20),vec3(1.0,0.82,0.45),lit),win*0.85);}}' +
+      'else if(v_kind>1.5&&v_kind<2.5){c=v_col;fg=v_fog*0.4;}' +
+      'else if(v_kind>2.5){c=v_col*(0.82+0.18*sin(v_w.x*0.35+u_time*1.5)*sin(v_w.z*0.5-u_time))*mix(1.0,0.55,u_night);}' +
+      'gl_FragColor=vec4(mix(c,u_fog,fg),1.0);}';
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; };
+    const a = sh(gl.VERTEX_SHADER, vs), b = sh(gl.FRAGMENT_SHADER, fs); if (!a || !b) return;
+    const pr = gl.createProgram(); gl.attachShader(pr, a); gl.attachShader(pr, b); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+    gl.useProgram(pr); gl.enable(gl.DEPTH_TEST);
+    World.gl = gl;
+    World.loc = { pos: gl.getAttribLocation(pr, 'a_pos'), n: gl.getAttribLocation(pr, 'a_n'), col: gl.getAttribLocation(pr, 'a_col'), kind: gl.getAttribLocation(pr, 'a_kind'),
+      vp: gl.getUniformLocation(pr, 'u_vp'), fog: gl.getUniformLocation(pr, 'u_fog'), night: gl.getUniformLocation(pr, 'u_night'), time: gl.getUniformLocation(pr, 'u_time') };
+    ['pos', 'n', 'col', 'kind'].forEach(k => gl.enableVertexAttribArray(World.loc[k]));
+    const data = World.build();
+    World.staticN = data.length / 10; World.sbuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, World.sbuf); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    World.dbuf = gl.createBuffer();
+    const lab = UI.$('wlabels');
+    DISTRICTS.forEach(d => { const el = document.createElement('div'); el.className = 'wlabel'; lab.appendChild(el); World.labels[d.id] = el; });
+    const joy = UI.$('joy'), knob = joy.firstElementChild;
+    const move = e => { const r = joy.getBoundingClientRect(), m = r.width / 2; let dx = e.clientX - r.left - m, dy = e.clientY - r.top - m; const l = Math.hypot(dx, dy), mx = m * .7; if (l > mx) { dx *= mx / l; dy *= mx / l; } World.joy.x = dx / mx; World.joy.y = -dy / mx; knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; };
+    const end = () => { World.joy.x = 0; World.joy.y = 0; knob.style.transform = ''; World.joyId = null; };
+    joy.addEventListener('pointerdown', e => { World.joyId = e.pointerId; try { joy.setPointerCapture(e.pointerId); } catch (x) { /* nic */ } move(e); e.preventDefault(); });
+    joy.addEventListener('pointermove', e => { if (World.joyId === e.pointerId) move(e); });
+    joy.addEventListener('pointerup', end); joy.addEventListener('pointercancel', end);
+    document.addEventListener('keyup', e => { delete World.keys[e.key.toLowerCase()]; });
+    window.addEventListener('blur', () => { World.keys = {}; });
+    window.addEventListener('resize', () => { if (World.shown) { World.resize(); if (!World.on) World.draw(0); } });
+    World.ok = true;
+  },
+
+  keyDown(e) {
+    const k = e.key.toLowerCase();
+    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].indexOf(k) >= 0) { World.keys[k] = true; e.preventDefault(); return true; }
+    if (k === 'e' || k === ' ') { e.preventDefault(); UI.actions.worldAct(); return true; }
+    return false;
+  },
+
+  place() {
+    const c = World.center(DIS[S.loc]);
+    World.p = { x: c.x + 8, z: c.z + 11, a: Math.PI, v: 0 }; World.camA = Math.PI; World.zone = S.loc; World.hudKey = '';
+  },
+  spawnPatrols() {
+    const W = CONFIG.world, C = W.cell, n = Math.floor(W.half / C) - 2; World.patrols = [];
+    for (let i = 0; i < W.patrols; i++) World.patrols.push({ x: rint(-n, n) * C, z: rint(-n, n) * C, dx: 0, dz: 0, left: 0 });
+  },
+
+  /* widoczność i pętla */
+  sync() {
+    if (!World.ok) return;
+    const want = !!S && UI.view === 'map' && UI.map3d, el = UI.$('world');
+    el.classList.toggle('on', want); World.shown = want;
+    UI.$('view').style.display = want ? 'none' : '';
+    if (!want) { World.on = false; World.keys = {}; return; }
+    if (World.sid !== S.id) { World.sid = S.id; World.place(); World.spawnPatrols(); }
+    World.resize(); World.hud();
+    const run = !UI.currentModal();
+    if (run && !World.on) { World.on = true; World.last = 0; if (!World.raf) World.raf = requestAnimationFrame(World.frame); }
+    else if (!run) { World.on = false; World.keys = {}; World.draw(0); }
+  },
+  resize() {
+    const el = UI.$('world'), nav = UI.$('nav'), mobile = window.innerWidth <= 760;
+    const h = Math.max(280, window.innerHeight - el.getBoundingClientRect().top - window.scrollY * 0 - (mobile ? nav.offsetHeight + 10 : 16));
+    el.style.height = Math.round(h) + 'px';
+  },
+  frame(t) {
+    World.raf = 0;
+    if (!World.on || !S) return;
+    const dt = World.last ? Math.min(.05, (t - World.last) / 1000) : .016; World.last = t;
+    World.update(dt);
+    if (World.on) { World.draw(t / 1000); World.raf = requestAnimationFrame(World.frame); }
+  },
+
+  collide(p) {
+    const C = CONFIG.world.cell, r = 1.8, ci = Math.floor(p.x / C), cj = Math.floor(p.z / C);
+    const test = b => {
+      if (!b) return;
+      const x0 = b[0] - r, x1 = b[1] + r, z0 = b[2] - r, z1 = b[3] + r;
+      if (p.x <= x0 || p.x >= x1 || p.z <= z0 || p.z >= z1) return;
+      const m = Math.min(p.x - x0, x1 - p.x, p.z - z0, z1 - p.z);
+      if (m === p.x - x0) p.x = x0; else if (m === x1 - p.x) p.x = x1; else if (m === p.z - z0) p.z = z0; else p.z = z1;
+      p.v *= .6;
+    };
+    for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) test(World.solid[i + ',' + j]);
+    World.extra.forEach(test);
+  },
+
+  update(dt) {
+    const W = CONFIG.world, p = World.p, K = World.keys, J = World.joy;
+    let steer = (K.d || K.arrowright ? 1 : 0) - (K.a || K.arrowleft ? 1 : 0) + J.x;
+    let thr = (K.w || K.arrowup ? 1 : 0) - (K.s || K.arrowdown ? 1 : 0);
+    const jl = Math.hypot(J.x, J.y); if (jl > .15) thr += J.y < -.5 ? J.y : jl;
+    steer = clamp(steer, -1, 1); thr = clamp(thr, -1, 1);
+    const max = W.speeds[S.up.transport] * (World.wet(p.x, p.z) ? W.waterSlow : 1) * (thr < 0 ? .45 : 1);
+    const target = thr * max; p.v += clamp(target - p.v, -W.accel * dt, W.accel * dt);
+    p.a -= steer * W.turn * dt * clamp(Math.abs(p.v) / 10, 0, 1) * (p.v < 0 ? -1 : 1);
+    p.x += Math.sin(p.a) * p.v * dt; p.z += Math.cos(p.a) * p.v * dt;
+    World.collide(p);
+    p.x = clamp(p.x, -W.half, W.half); p.z = clamp(p.z, -W.half, W.half);
+
+    let zone = null;
+    for (const d of DISTRICTS) { const c = World.center(d), dd = Math.hypot(p.x - c.x, p.z - c.z); if (dd < W.zoneRadius) { zone = d.id;
+      if (zone !== S.loc) {
+        if (S.hours >= Game.travelCost()) { const r = Game.travel(zone); if (r.ok) { UI.toast(r.msg); UI.renderTop(); } }
+        else { const k = (W.zoneRadius + .6) / (dd || 1); p.x = c.x + (p.x - c.x) * k; p.z = c.z + (p.z - c.z) * k; p.v = 0; zone = null;
+          if (Date.now() - World.warnAt > 3500) { World.warnAt = Date.now(); UI.toast('Za mało godzin, żeby wjechać: ' + d.name + '. Zakończ dzień.', 'warn'); } }
+      }
+      break; } }
+    World.zone = zone;
+
+    for (let i = S.pickups.length - 1; i >= 0; i--) { const q = S.pickups[i]; if (Math.hypot(p.x - q.x, p.z - q.z) < 4.5) { const r = Game.collect(i); if (r.ok) { UI.toast(r.msg); UI.renderTop(); if (S.over) { UI.render(); return; } } } }
+
+    let watched = false;
+    World.patrols.forEach(c => {
+      if (c.left <= 0) {
+        const opts = [[c.dx, c.dz], [c.dz, c.dx], [-c.dz, -c.dx], [-c.dx, -c.dz]].filter(q => q[0] || q[1]);
+        if (!opts.length) opts.push([1, 0], [-1, 0], [0, 1], [0, -1]);
+        const order = Math.random() < .6 ? opts : opts.slice().sort(() => Math.random() - .5);
+        let pickd = null;
+        for (const q of order) { const nx = c.x + q[0] * W.cell, nz = c.z + q[1] * W.cell;
+          if (Math.abs(nx) > W.half - 20 || Math.abs(nz) > W.half - 20) continue;
+          if (World.wet(nx, nz) || World.wet(c.x + q[0] * W.cell / 2, c.z + q[1] * W.cell / 2)) continue;
+          pickd = q; break; }
+        if (!pickd) pickd = [-c.dx, -c.dz];
+        c.dx = pickd[0]; c.dz = pickd[1]; c.left = W.cell;
+      }
+      const st = Math.min(c.left, W.patrolSpeed * dt); c.x += c.dx * st; c.z += c.dz * st; c.left -= st;
+      if (Math.hypot(p.x - c.x, p.z - c.z) < W.patrolRange) watched = true;
+    });
+    if (watched && Game.load() > 0) { const before = Math.floor(S.heat); Game.patrolHeat(dt); if (Math.floor(S.heat) !== before) UI.renderTop(); }
+    else watched = false;
+    if (World.watched && !watched) Store.save();
+    World.watched = watched;
+
+    let da = p.a - World.camA; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2;
+    World.camA += da * Math.min(1, dt * 3.5);
+    World.hud();
+  },
+
+  hud() {
+    const d = World.zone ? DIS[World.zone] : null, cost = Game.travelCost();
+    const key = [World.zone, S.hours, S.loc, World.watched, S.clients[S.loc] ? 1 : 0, S.up.transport].join('|');
+    if (key === World.hudKey) return; World.hudKey = key;
+    UI.$('wloc').textContent = d ? d.emoji + ' ' + d.name : '🛣️ W trasie';
+    UI.$('wsub').textContent = (d ? 'ceny ' + Math.round(Market.index(d.id) * 100) + '% · ' : 'ostatnio: ' + DIS[S.loc].name + ' · ') + '⏱ ' + S.hours + ' h' + (S.hours < cost ? ' — za mało na kolejną dzielnicę' : ' (wjazd ' + cost + ' h)');
+    UI.$('wact').style.display = d ? '' : 'none';
+    UI.$('wact').textContent = S.clients[S.loc] && d ? '🤝 Handluj (czeka klient)' : '📈 Handluj';
+    UI.$('wwarn').style.display = World.watched ? '' : 'none';
+    DISTRICTS.forEach(x => { World.labels[x.id].textContent = x.emoji + ' ' + x.name + (S.clients[x.id] ? ' 🤝' : ''); World.labels[x.id].classList.toggle('here', x.id === S.loc); });
+  },
+
+  draw(time) {
+    const gl = World.gl, cv = UI.$('gl'), dpr = Math.min(2, window.devicePixelRatio || 1), w = cv.clientWidth, h = cv.clientHeight;
+    if (!w || !h) return;
+    const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+    if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+    gl.viewport(0, 0, pw, ph);
+    const tod = clamp(1 - S.hours / CONFIG.hoursPerDay, 0, 1), night = clamp((tod - .45) / .55, 0, 1);
+    const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+    const sky = tod < .6 ? mix([.30, .52, .60], [.62, .36, .38], tod / .6) : mix([.62, .36, .38], [.03, .05, .10], (tod - .6) / .4);
+    gl.clearColor(sky[0], sky[1], sky[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    const p = World.p, fx = Math.sin(World.camA), fz = Math.cos(World.camA), portrait = h > w;
+    const dist = portrait ? 26 : 22, vp = M4.mul(M4.persp(portrait ? 1.15 : .95, w / h, 2, 900), M4.look(p.x - fx * dist, portrait ? 15 : 12, p.z - fz * dist, p.x + fx * 8, 2.5, p.z + fz * 8));
+    World.vp = vp;
+    const L = World.loc;
+    gl.uniformMatrix4fv(L.vp, false, vp); gl.uniform3f(L.fog, sky[0], sky[1], sky[2]); gl.uniform1f(L.night, night); gl.uniform1f(L.time, time % 1000);
+    const bind = buf => { gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.vertexAttribPointer(L.pos, 3, gl.FLOAT, false, 40, 0); gl.vertexAttribPointer(L.n, 3, gl.FLOAT, false, 40, 12); gl.vertexAttribPointer(L.col, 3, gl.FLOAT, false, 40, 24); gl.vertexAttribPointer(L.kind, 1, gl.FLOAT, false, 40, 36); };
+    bind(World.sbuf); gl.drawArrays(gl.TRIANGLES, 0, World.staticN);
+
+    const o = [], c = Math.cos(p.a), s = Math.sin(p.a);
+    const part = (ox, oy, oz, sx, sy, sz, col, kind) => World.box(o, p.x + ox * c + oz * s, oy, p.z - ox * s + oz * c, sx, sy, sz, p.a, col, kind);
+    const tr = S.up.transport, skin = [.95, .75, .6], hood = NEON;
+    if (tr === 2) { part(0, 1.6, 0, 2.6, 2.4, 5.2, [.92, .92, .9]); part(0, 1.2, 0, 2.7, .5, 5.3, [.15, .7, .2]); part(0, 2.2, 2.3, 2.3, .9, .8, [.1, .14, .18]); part(0, .5, 2.65, 1.8, .3, .1, [1, 1, .7], 2); }
+    else {
+      if (tr === 1) { part(0, .9, 0, .9, 1, 2.6, [.3, .85, .75]); part(0, 1.6, 1.1, .8, .9, .3, [.3, .85, .75]); }
+      else { part(0, .8, 0, .25, .25, 2.6, [.85, .2, .2]); part(0, .5, 1.1, .2, 1, .9, [.15, .15, .15]); part(0, .5, -1.1, .2, 1, .9, [.15, .15, .15]); }
+      part(0, 2.1, -.1, 1, 1.5, .7, hood); part(0, 3.2, -.1, .65, .65, .65, skin); part(0, 2.2, -.7, .9, 1.1, .5, [.2, .25, .5]);
+    }
+    World.patrols.forEach(q => { const rot = Math.atan2(q.dx, q.dz), fl = Math.floor(time * 4) % 2;
+      World.box(o, q.x, 1, q.z, 2.3, 1.3, 4.8, rot, [.9, .9, .92]); World.box(o, q.x, 1.9, q.z, 2.1, .8, 2.4, rot, [.15, .25, .6]);
+      World.box(o, q.x, 2.5, q.z, 1.4, .35, .5, rot, fl ? [1, .1, .1] : [.1, .3, 1], 2); });
+    S.pickups.forEach((q, i) => { World.box(o, q.x, 1.6 + Math.sin(time * 3 + i) * .4, q.z, 1.3, .9, 1.3, time * 2 + i, [1, .85, .2], 2); World.box(o, q.x, 9, q.z, .25, 14, .25, 0, [1, .85, .2], 2); });
+    bind(World.dbuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(o), gl.DYNAMIC_DRAW); gl.drawArrays(gl.TRIANGLES, 0, o.length / 10);
+
+    DISTRICTS.forEach(d => { const q = World.center(d), el = World.labels[d.id];
+      const X = vp[0] * q.x + vp[4] * 34 + vp[8] * q.z + vp[12], Y = vp[1] * q.x + vp[5] * 34 + vp[9] * q.z + vp[13], Wc = vp[3] * q.x + vp[7] * 34 + vp[11] * q.z + vp[15];
+      if (Wc < 5) { el.style.display = 'none'; return; }
+      const sx = (X / Wc * .5 + .5) * w, sy = (1 - (Y / Wc * .5 + .5)) * h;
+      if (sx < -60 || sx > w + 60 || sy < -30 || sy > h) { el.style.display = 'none'; return; }
+      el.style.display = ''; el.style.transform = 'translate(' + Math.round(sx) + 'px,' + Math.round(Math.max(4, sy)) + 'px) translate(-50%,0)'; el.style.opacity = Wc > 420 ? .55 : 1; });
+    if (World.frameNo++ % 3 === 0) World.mini(time);
+  },
+
+  mini(time) {
+    const cv = UI.$('mini'), g = cv.getContext('2d'), N = cv.width, W = CONFIG.world, k = N / (W.half * 2 + 40), X = x => N / 2 + x * k, Z = z => N / 2 + z * k;
+    g.clearRect(0, 0, N, N); g.fillStyle = 'rgba(5,12,9,.78)'; g.fillRect(0, 0, N, N);
+    g.strokeStyle = '#2a7fc0'; g.lineWidth = W.riverHalf * 2 * k; g.beginPath(); for (let x = -W.half - 20; x <= W.half + 20; x += 20) { if (x === -W.half - 20) g.moveTo(X(x), Z(World.riverZ(x))); else g.lineTo(X(x), Z(World.riverZ(x))); } g.stroke();
+    g.font = Math.round(N * .1) + 'px system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    DISTRICTS.forEach(d => { const c = World.center(d), here = d.id === S.loc; g.beginPath(); g.arc(X(c.x), Z(c.z), W.zoneRadius * k, 0, Math.PI * 2);
+      g.fillStyle = here ? 'rgba(57,255,20,.25)' : 'rgba(255,255,255,.06)'; g.fill(); g.lineWidth = here ? 3 : 1.5; g.strokeStyle = here ? '#39ff14' : 'rgba(57,255,20,.45)'; g.stroke();
+      g.fillStyle = '#fff'; g.fillText(d.emoji, X(c.x), Z(c.z)); });
+    g.fillStyle = '#ffd94a'; S.pickups.forEach(q => { g.beginPath(); g.arc(X(q.x), Z(q.z), 4, 0, Math.PI * 2); g.fill(); });
+    g.fillStyle = Math.floor(time * 4) % 2 ? '#ff4d5e' : '#3e8bff'; World.patrols.forEach(q => { g.fillRect(X(q.x) - 4, Z(q.z) - 4, 8, 8); });
+    const p = World.p; g.save(); g.translate(X(p.x), Z(p.z)); g.rotate(-p.a); g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = 2; g.beginPath(); g.moveTo(0, 11); g.lineTo(7, -8); g.lineTo(0, -4); g.lineTo(-7, -8); g.closePath(); g.stroke(); g.fill(); g.restore();
   }
 };
 
